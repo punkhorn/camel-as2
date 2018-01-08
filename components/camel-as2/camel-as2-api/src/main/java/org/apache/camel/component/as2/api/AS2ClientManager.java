@@ -17,12 +17,6 @@
 package org.apache.camel.component.as2.api;
 
 import static org.apache.camel.component.as2.api.AS2Constants.APPLICATION_EDIFACT_MIME_TYPE;
-import static org.apache.camel.component.as2.api.AS2Constants.AS2_FROM_HEADER;
-import static org.apache.camel.component.as2.api.AS2Constants.AS2_TO_HEADER;
-import static org.apache.camel.component.as2.api.AS2Constants.AS2_VERSION_HEADER;
-import static org.apache.camel.component.as2.api.AS2Constants.CONTENT_TYPE_HEADER;
-import static org.apache.camel.component.as2.api.AS2Constants.MESSAGE_ID_HEADER;
-import static org.apache.camel.component.as2.api.AS2Constants.SUBJECT_HEADER;
 
 import java.io.IOException;
 
@@ -67,26 +61,77 @@ public class AS2ClientManager {
         interchange.setRequest(request);
         
         /* AS2-Version header */
-        request.addHeader(AS2_VERSION_HEADER, "1.1");
+        request.addHeader(AS2Header.AS2_VERSION, "1.1");
 
         /* Content-Type header (Application/EDIFACT) */   
-        request.addHeader(CONTENT_TYPE_HEADER, APPLICATION_EDIFACT_MIME_TYPE);
+        request.addHeader(AS2Header.CONTENT_TYPE, APPLICATION_EDIFACT_MIME_TYPE);
 
         /* AS2-From header */
         Util.validateAS2Name(as2From);
-        request.addHeader(AS2_FROM_HEADER, as2From);
+        request.addHeader(AS2Header.AS2_FROM, as2From);
 
         /* AS2-To header */
         Util.validateAS2Name(as2To);
-        request.addHeader(AS2_TO_HEADER, as2To);
+        request.addHeader(AS2Header.AS2_TO, as2To);
 
         /* Subject header */
         // SHOULD be set to aid MDN in identifying the original messaged
-        request.addHeader(SUBJECT_HEADER, subject);
+        request.addHeader(AS2Header.SUBJECT, subject);
 
         /* Message-Id header*/
         // SHOULD be set to aid in message reconciliation
-        request.addHeader(MESSAGE_ID_HEADER, Util.createMessageId(as2ClientConnection.getClientFqdn()));
+        request.addHeader(AS2Header.MESSAGE_ID, Util.createMessageId(as2ClientConnection.getClientFqdn()));
+        
+         // Create Message Body
+        /* EDI Message is Message Body */
+        HttpEntity entity = new StringEntity(ediMessage, ContentType.create(APPLICATION_EDIFACT_MIME_TYPE, Consts.UTF_8));
+        request.setEntity(entity);
+        
+        HttpResponse response = as2ClientConnection.send(request);
+        interchange.setResponse(response);
+        
+        return interchange;
+    }
+    
+    /**
+     * Send <code>ediMessage</code> unencrypted and signed to trading partner.
+     * 
+     * @param ediMessage - EDI message to transport
+     * @param subject - the subject sent in the interchange request.
+     * @param as2From - the AS2 identifier for the sending trading partner
+     * @param as2To - the AS2 identifier for the receiving trading partner
+     * @return The AS2 Interchange
+     * @throws InvalidAS2NameException 
+     * @throws IOException 
+     * @throws HttpException 
+     */
+    public AS2Interchange sendNoEncryptSigned(String requestUri, String ediMessage, String subject,  String as2From, String as2To) throws InvalidAS2NameException, HttpException, IOException {
+        AS2Interchange interchange = new AS2Interchange();
+        
+        BasicHttpEntityEnclosingRequest request = new BasicHttpEntityEnclosingRequest("POST", requestUri);
+        interchange.setRequest(request);
+        
+        /* AS2-Version header */
+        request.addHeader(AS2Header.AS2_VERSION, "1.1");
+
+        /* Content-Type header (Application/EDIFACT) */   
+        request.addHeader(AS2Header.CONTENT_TYPE, APPLICATION_EDIFACT_MIME_TYPE);
+
+        /* AS2-From header */
+        Util.validateAS2Name(as2From);
+        request.addHeader(AS2Header.AS2_FROM, as2From);
+
+        /* AS2-To header */
+        Util.validateAS2Name(as2To);
+        request.addHeader(AS2Header.AS2_TO, as2To);
+
+        /* Subject header */
+        // SHOULD be set to aid MDN in identifying the original messaged
+        request.addHeader(AS2Header.SUBJECT, subject);
+
+        /* Message-Id header*/
+        // SHOULD be set to aid in message reconciliation
+        request.addHeader(AS2Header.MESSAGE_ID, Util.createMessageId(as2ClientConnection.getClientFqdn()));
         
          // Create Message Body
         /* EDI Message is Message Body */

@@ -17,9 +17,18 @@
 package org.apache.camel.component.as2.api;
 
 import java.awt.event.KeyEvent;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.http.Header;
+import org.apache.http.HeaderIterator;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpEntityEnclosingRequest;
+import org.apache.http.HttpRequest;
+import org.apache.http.RequestLine;
 
 /**
  * Utility Methods used in AS2 Component
@@ -39,7 +48,7 @@ public class Util {
     public static final Pattern AS_NAME_PATTERN = Pattern.compile(AS2_NAME);
     
     private static Random generator = new Random();
-   
+    
     /**
      * Validates if the given <code>name</code> is a valid AS2 Name
      * 
@@ -70,8 +79,9 @@ public class Util {
                     /* Wall Clock Time in Nanoseconds */          /* 64 Bit Random Number */                      /* Fully Qualified Domain Name */
         return "<" + Long.toString(System.nanoTime(), 36) + "." + Long.toString(generator.nextLong(), 36) + "@" + fqdn + ">";
     }
-
-    /**
+    
+    
+   /**
      * Determines if <code>c</code> is a printable character.
      * @param c - the character to test
      * @return <code>true</code> if <code>c</code> is a printable character; <code>false</code> otherwise.
@@ -83,4 +93,31 @@ public class Util {
                 block != null &&
                 block != Character.UnicodeBlock.SPECIALS;
     }
+    
+    /**
+     * Prints the contents of request to given print stream.
+     * 
+     * @param out - the stream printed to.
+     * @param request - the request printed.
+     * @throws IOException
+     */
+    public static void printRequest(PrintStream out, HttpRequest request) throws IOException {
+        // Print request line
+        RequestLine requestLine = request.getRequestLine();
+        out.println(requestLine.getMethod() + ' ' + requestLine.getUri() + ' ' + requestLine.getProtocolVersion());
+        
+        // Write headers
+        for (final HeaderIterator it = request.headerIterator(); it.hasNext(); ) {
+            Header header = it.nextHeader();
+            out.println(header.getName() + ": " + (header.getValue() == null ? "" : header.getValue()));
+        }
+        out.println(); // write empty line separating header from body.
+        
+        if (request instanceof HttpEntityEnclosingRequest) {
+            // Write entity
+            HttpEntity entity = ((HttpEntityEnclosingRequest)request).getEntity();
+            entity.writeTo(out);
+        }
+    }
+
 }
