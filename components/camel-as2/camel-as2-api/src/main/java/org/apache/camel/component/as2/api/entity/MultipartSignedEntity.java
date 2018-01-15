@@ -8,7 +8,7 @@ import org.apache.http.message.BasicHeader;
 public class MultipartSignedEntity extends MultipartMimeEntity {
 
     public MultipartSignedEntity(MimeEntity data, AS2SignedDataGenerator signer, String signatureCharSet, String signatureTransferEncoding, boolean isMainBody, String boundary) {
-        super(null, true, boundary);
+        super(null, isMainBody, boundary);
         ContentType contentType = signer.createMultipartSignedContentType(this.boundary);
         this.contentType = new BasicHeader(AS2Header.CONTENT_TYPE, contentType.toString());
         addPart(data);

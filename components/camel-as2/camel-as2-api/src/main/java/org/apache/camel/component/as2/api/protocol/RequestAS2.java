@@ -2,6 +2,7 @@ package org.apache.camel.component.as2.api.protocol;
 
 import java.io.IOException;
 
+import org.apache.camel.component.as2.api.AS2ClientManager;
 import org.apache.camel.component.as2.api.AS2Header;
 import org.apache.camel.component.as2.api.InvalidAS2NameException;
 import org.apache.camel.component.as2.api.Util;
@@ -12,11 +13,6 @@ import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpCoreContext;
 
 public class RequestAS2 implements HttpRequestInterceptor {
-    
-    public static String SUBJECT = "CamelAS2." + "Subject";
-    public static String FROM = "CamelAS2." + "From";
-    public static String AS2_FROM = "CamelAS2." + "AS2-From";
-    public static String AS2_TO = "CamelAS2." + "AS2-To";
     
     private final String as2Version;
     private final String clientFQDN;
@@ -32,18 +28,18 @@ public class RequestAS2 implements HttpRequestInterceptor {
         HttpCoreContext coreContext = HttpCoreContext.adapt(context);
         
         /* Subject header */
-        String subject = coreContext.getAttribute(SUBJECT, String.class);
+        String subject = coreContext.getAttribute(AS2ClientManager.SUBJECT, String.class);
         request.addHeader(AS2Header.SUBJECT, subject);
         
         /* From header */
-        String from = coreContext.getAttribute(FROM, String.class);
+        String from = coreContext.getAttribute(AS2ClientManager.FROM, String.class);
         request.addHeader(AS2Header.FROM, from);
 
         /* AS2-Version header */
         request.addHeader(AS2Header.AS2_VERSION, as2Version);
 
         /* AS2-From header */
-        String as2From = coreContext.getAttribute(AS2_FROM, String.class);
+        String as2From = coreContext.getAttribute(AS2ClientManager.AS2_FROM, String.class);
         try {
             Util.validateAS2Name(as2From);
         } catch (InvalidAS2NameException e) {
@@ -52,7 +48,7 @@ public class RequestAS2 implements HttpRequestInterceptor {
         request.addHeader(AS2Header.AS2_FROM, as2From);
 
         /* AS2-To header */
-        String as2To = coreContext.getAttribute(AS2_TO, String.class);
+        String as2To = coreContext.getAttribute(AS2ClientManager.AS2_TO, String.class);
         try {
             Util.validateAS2Name(as2To);
         } catch (InvalidAS2NameException e) {

@@ -64,6 +64,10 @@ public abstract class MimeEntity extends AbstractHttpEntity {
     public boolean isMainBody() {
         return isMainBody;
     }
+    
+    public void setMainBody(boolean isMainBody) {
+        this.isMainBody = isMainBody;
+    }
 
     public Header getContentTransferEncoding() {
         return this.contentTransferEncoding;

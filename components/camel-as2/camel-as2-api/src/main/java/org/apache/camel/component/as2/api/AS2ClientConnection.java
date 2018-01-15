@@ -41,8 +41,8 @@ import org.apache.http.protocol.RequestUserAgent;
 
 public class AS2ClientConnection {
     
+    private HttpHost targetHost;
     private HttpProcessor httpProcessor;
-    private HttpCoreContext httpContext;
     private DefaultBHttpClientConnection httpConnection;
     private String as2Version;
     private String userAgent;
@@ -71,12 +71,9 @@ public class AS2ClientConnection {
         if (targetPortNumber == null) {
             throw new IllegalArgumentException("Parameter 'targetPortNumber' can not be null");
         }
-                
-        // Build Context
-        httpContext = HttpCoreContext.create();
-        HttpHost targetHost = new HttpHost(targetHostName, targetPortNumber);
-        httpContext.setTargetHost(targetHost);
         
+        targetHost = new HttpHost(targetHostName, targetPortNumber);
+                
         // Build Processor
         httpProcessor = HttpProcessorBuilder.create()
                 .add(new RequestAS2(as2Version, clientFqdn))                
@@ -112,7 +109,9 @@ public class AS2ClientConnection {
         return clientFqdn;
     }
 
-    public HttpResponse send(HttpRequest request) throws HttpException, IOException {
+    public HttpResponse send(HttpRequest request, HttpCoreContext httpContext) throws HttpException, IOException {
+        
+        httpContext.setTargetHost(targetHost);
 
         // Execute Request
         HttpRequestExecutor httpexecutor = new HttpRequestExecutor();
