@@ -24,19 +24,67 @@ import org.apache.camel.component.as2.api.AS2MediaType;
 import org.apache.camel.component.as2.api.CanonicalOutputStream;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
+import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
+import org.apache.http.impl.io.AbstractMessageParser;
+import org.apache.http.impl.io.HttpTransportMetricsImpl;
+import org.apache.http.impl.io.SessionInputBufferImpl;
+import org.apache.http.message.BasicLineParser;
+import org.apache.http.util.Args;
+import org.apache.http.util.CharArrayBuffer;
 
 public class ApplicationEDIFACTEntity extends MimeEntity {
     
     private final String content;
+    
+    public static HttpEntity parseEntity(HttpEntity entity, String charSet, boolean isMainBody) throws Exception{
+        Args.notNull(entity, "Entity");
+        Args.check(entity.isStreaming(), "Entity is not streaming");
+        ApplicationEDIFACTEntity applicationEDIFACTEntity = null;
+        Header[] headers = null;
+
+        // Determine Transfer Encoding
+        Header transferEncoding = entity.getContentEncoding();
+        String contentTransferEncoding = transferEncoding == null ? null : transferEncoding.getValue();
+        
+        SessionInputBufferImpl inBuffer = new SessionInputBufferImpl(new HttpTransportMetricsImpl(), 8 * 1024);
+        inBuffer.bind(entity.getContent());
+        
+        // Parse Headers
+        if (!isMainBody) {
+           headers = AbstractMessageParser.parseHeaders(
+                    inBuffer,
+                    -1,
+                    -1,
+                    BasicLineParser.INSTANCE,
+                    null);
+        }
+        
+        // Extract content from stream
+        CharArrayBuffer lineBuffer = new CharArrayBuffer(1024);
+        while(inBuffer.readLine(lineBuffer) != -1) {
+            lineBuffer.append("\r\n"); // add line delimiter
+        }
+        
+        // Build application EDIFACT entity
+        applicationEDIFACTEntity = new ApplicationEDIFACTEntity(lineBuffer.toString(), charSet, contentTransferEncoding, isMainBody);
+        if (headers != null) {
+            applicationEDIFACTEntity.setHeaders(headers);
+        }
+        
+        return applicationEDIFACTEntity;
+    }
+
 
     public ApplicationEDIFACTEntity(String content, String charset, String transferEncoding, boolean isMainBody) {
         super(ContentType.create(AS2MediaType.APPLICATION_EDIFACT, charset), transferEncoding, isMainBody);
-        this.content = content;
+        this.content = Args.notNull(content, "Content");
         addHeader(this.contentType);
-        addHeader(this.contentTransferEncoding);
+        if (this.contentTransferEncoding != null) {
+            addHeader(this.contentTransferEncoding);
+        }
     }
-
+    
     @Override
     public void writeTo(OutputStream outstream) throws IOException {
         NoCloseOutputStream ncos = new NoCloseOutputStream(outstream);

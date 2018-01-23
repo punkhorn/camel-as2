@@ -19,7 +19,11 @@ package org.apache.camel.component.as2.api;
 import org.apache.http.protocol.HTTP;
 
 public class AS2Header {
-
+    
+    /**
+     * Message Header Name for MIME Version
+     */
+    public static final String MIME_VERSION = "MIME-Version";
     /**
      * Message Header Name for AS2 From
      */

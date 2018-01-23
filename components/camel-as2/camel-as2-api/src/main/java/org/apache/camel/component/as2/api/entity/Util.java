@@ -1,12 +1,20 @@
 package org.apache.camel.component.as2.api.entity;
 
+import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.camel.component.as2.api.AS2CharSet;
+import org.apache.commons.codec.binary.Base64OutputStream;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpEntityEnclosingRequest;
+import org.apache.http.HttpRequest;
+import org.apache.http.entity.ContentType;
+
 public class Util {
-    
+
     private static AtomicLong partNumber = new AtomicLong();
-    
-   /**
+
+    /**
      * Generated a unique value for a Multipart boundary string.
      * <p>
      * The boundary string is composed of the components:
@@ -28,9 +36,63 @@ public class Util {
     public static boolean validateBoundaryValue(String boundaryValue) {
         return true; // TODO: add validation logic.
     }
-    
+
     public static String appendParameter(String headerString, String parameterName, String parameterValue) {
         return headerString + "; " + parameterName + "=" + parameterValue;
     }
- 
+    
+    public static OutputStream encode(OutputStream os, String encoding) throws Exception {
+        if (encoding == null) {
+            // Identity encoding
+            return os;
+        }
+        switch (encoding.toLowerCase()) {
+        case "base64":
+            return new Base64OutputStream(os, true);
+        case "quoted-printable":
+            // TODO: implement QuotedPrintableOutputStream
+            return new Base64OutputStream(os, true);
+        case "binary":
+        case "7bit":
+        case "8bit":
+            // Identity encoding
+            return os;
+        default:
+            throw new Exception("Unknown encoding: " + encoding);
+        }
+    }
+
+    public static void parseAS2MessageEntity(HttpRequest request) throws Exception {
+        HttpEntity entity = null;
+        if (request instanceof HttpEntityEnclosingRequest) {
+            entity = ((HttpEntityEnclosingRequest) request).getEntity();
+            if (entity.getContentType() != null) {
+                ContentType contentType;
+                try {
+                    contentType =  ContentType.parse(entity.getContentType().getValue());
+                } catch (Exception e) {
+                    throw new Exception("Failed to get Content Type", e);
+                }
+                switch (contentType.getMimeType().toLowerCase()) {
+                case "application/edifact":
+                    entity = ApplicationEDIFACTEntity.parseEntity(entity, contentType.getParameter(AS2CharSet.PARAM), true);
+                    ((HttpEntityEnclosingRequest) request).setEntity(entity);
+                    break;
+                case "application/edi-x12":
+                    break;
+                case "application/consent":
+                    break;
+                case "multipart/signed":
+                    break;
+                case "application/pkcs7-mime":
+                    break;
+                case "message/disposition-notification":
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+    }
+    
 }

@@ -3,6 +3,7 @@ package org.apache.camel.component.as2.api.protocol;
 import java.io.IOException;
 
 import org.apache.camel.component.as2.api.AS2ClientManager;
+import org.apache.camel.component.as2.api.AS2Constants;
 import org.apache.camel.component.as2.api.AS2Header;
 import org.apache.camel.component.as2.api.InvalidAS2NameException;
 import org.apache.camel.component.as2.api.Util;
@@ -26,6 +27,9 @@ public class RequestAS2 implements HttpRequestInterceptor {
     public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
         
         HttpCoreContext coreContext = HttpCoreContext.adapt(context);
+        
+        /* MIME header */
+        request.addHeader(AS2Header.MIME_VERSION, AS2Constants.MIME_VERSION);
         
         /* Subject header */
         String subject = coreContext.getAttribute(AS2ClientManager.SUBJECT, String.class);

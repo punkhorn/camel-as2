@@ -46,7 +46,7 @@ public abstract class MimeEntity extends AbstractHttpEntity {
 
     private final HeaderGroup headergroup = new HeaderGroup();
     
-    protected Header contentTransferEncoding;
+    protected Header contentTransferEncoding = null;
 
     protected long contentLength = RECALCULATE_CONTENT_LENGTH;
 
@@ -55,7 +55,9 @@ public abstract class MimeEntity extends AbstractHttpEntity {
         if (contentType != null) {
             this.contentType = new BasicHeader(AS2Header.CONTENT_TYPE, contentType.toString());
         }
-        this.contentTransferEncoding = new BasicHeader(AS2Header.CONTENT_TRANSFER_ENCODING, contentTransferEncoding);   
+        if (contentTransferEncoding != null) {
+            this.contentTransferEncoding = new BasicHeader(AS2Header.CONTENT_TRANSFER_ENCODING, contentTransferEncoding);
+        }
     }
     
     protected MimeEntity() {
@@ -141,7 +143,7 @@ public abstract class MimeEntity extends AbstractHttpEntity {
 
     @Override
     public boolean isRepeatable() {
-        return getContentLength() == -1;
+        return true;
     }
 
     @Override

@@ -23,11 +23,25 @@ import org.apache.http.protocol.HttpCoreContext;
  */
 public interface AS2Constants {
     
+    /**
+     * The Value of User Agent Header used by AS2 Camel Component.
+     */
     public static final String HTTP_USER_AGENT = "Camel AS2 Component";
     
+    /**
+     * The Value of Origin Server Header used by AS2 Camel Component.
+     */
     public static final String HTTP_ORIGIN_SERVER = "Camel AS2 Component";
     
+    /**
+     * Fully Qualified Domain Name used by AS2 Camel Component in Message ID Header.
+     */
     public static final String HTTP_MESSAGE_ID_FQDN = "camel.apache.org";
+    
+    /**
+     * The Value of User Agent Header used by AS2 Camel Component.
+     */
+    public static final String MIME_VERSION = "1.0";
     
     //
     // HTTP Context Attribute Names
