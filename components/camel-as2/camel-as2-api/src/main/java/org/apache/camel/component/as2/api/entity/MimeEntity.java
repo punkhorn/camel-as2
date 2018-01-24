@@ -50,16 +50,6 @@ public abstract class MimeEntity extends AbstractHttpEntity {
 
     protected long contentLength = RECALCULATE_CONTENT_LENGTH;
 
-    protected MimeEntity(ContentType contentType, String contentTransferEncoding, boolean isMainBody) {
-        this.isMainBody = isMainBody;
-        if (contentType != null) {
-            this.contentType = new BasicHeader(AS2Header.CONTENT_TYPE, contentType.toString());
-        }
-        if (contentTransferEncoding != null) {
-            this.contentTransferEncoding = new BasicHeader(AS2Header.CONTENT_TRANSFER_ENCODING, contentTransferEncoding);
-        }
-    }
-    
     protected MimeEntity() {
     }
     
@@ -70,10 +60,64 @@ public abstract class MimeEntity extends AbstractHttpEntity {
     public void setMainBody(boolean isMainBody) {
         this.isMainBody = isMainBody;
     }
+    
+    public void setContentType(ContentType contentType) {
+        super.setContentType(contentType == null ? null : contentType.toString());
+    }
+    
+    @Override
+    public void setContentType(Header contentType) {
+        super.setContentType(contentType);
+        addHeader(contentType);
+    }
+    
+    @Override
+    public void setContentEncoding(Header contentEncoding) {
+        super.setContentEncoding(contentEncoding);
+        addHeader(contentEncoding);
+    }
 
+    /**
+     * Obtains the Content-Transfer-Encoding header.
+     * The default implementation returns the value of the
+     * {@link #contentEncoding contentTransferEncoding} attribute.
+     *
+     * @return  the Content-Transfer-Encoding header, or {@code null}
+     */
     public Header getContentTransferEncoding() {
         return this.contentTransferEncoding;
     }
+
+    /**
+     * Specifies the Content-Transfer-Encoding header.
+     * The default implementation sets the value of the
+     * {@link #contentTranferEncoding contentTransferEncoding} attribute.
+     *
+     * @param contentEncoding   the new Content-Transfer-Encoding header, or
+     *                          {@code null} to unset
+     */
+    public void setContentTranserEncoding(final Header contentEncoding) {
+        this.contentTransferEncoding = contentEncoding;
+        addHeader(contentTransferEncoding);
+    }
+
+    /**
+     * Specifies the Content-Transfer-Encoding header, as a string.
+     * The default implementation calls
+     * {@link #setContentTransferEncoding(Header) setContentEncoding(Header)}.
+     *
+     * @param ceString     the new Content-Transfer-Encoding header, or
+     *                     {@code null} to unset
+     */
+    public void setContentTransferEncoding(final String contentTranserEncoding) {
+        Header h = null;
+        if (contentTranserEncoding != null) {
+            h = new BasicHeader(AS2Header.CONTENT_TRANSFER_ENCODING, contentTranserEncoding);
+        }
+        setContentTranserEncoding(h);
+    }
+
+
     
     public boolean containsHeader(final String name) {
         return this.headergroup.containsHeader(name);

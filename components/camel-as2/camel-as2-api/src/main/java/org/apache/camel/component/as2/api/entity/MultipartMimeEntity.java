@@ -10,7 +10,7 @@ import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
 import org.apache.http.entity.ContentType;
 
-public class MultipartMimeEntity extends MimeEntity {
+public abstract class MultipartMimeEntity extends MimeEntity {
 
     private final List<MimeEntity> parts = new ArrayList<MimeEntity>();
 
@@ -25,7 +25,9 @@ public class MultipartMimeEntity extends MimeEntity {
     }
 
     public MultipartMimeEntity(ContentType contentType, boolean isMainBody, String boundary) {
-        super(contentType, null, isMainBody);
+//        super(contentType, null, isMainBody);
+        setContentType(contentType);
+        setMainBody(isMainBody);
         
         if (boundary != null && Util.validateBoundaryValue(boundary)) {
             this.boundary = boundary;

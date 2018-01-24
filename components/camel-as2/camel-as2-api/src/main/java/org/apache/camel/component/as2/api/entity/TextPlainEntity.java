@@ -9,14 +9,17 @@ import org.apache.camel.component.as2.api.CanonicalOutputStream;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
 import org.apache.http.entity.ContentType;
+import org.apache.http.util.Args;
 
 public class TextPlainEntity extends MimeEntity {
     
     private String content;
     
     public TextPlainEntity(String content, String charset, String contentTransferEncoding, boolean isMainBody) {
-        super(ContentType.create(AS2MediaType.TEXT_PLAIN, charset), contentTransferEncoding, isMainBody);
-        this.content = content;
+        this.content = Args.notNull(content, "Content");
+        setContentType(ContentType.create(AS2MediaType.TEXT_PLAIN, charset));
+        setContentTransferEncoding(contentTransferEncoding);
+        setMainBody(isMainBody);
     }
 
     @Override

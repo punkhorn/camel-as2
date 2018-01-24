@@ -29,7 +29,7 @@ public class AS2MediaType {
     /**
      * Media Type for Text/Plain Data
      */
-    public static final String TEXT_PLAIN = "text/plain; charset=us-ascii";
+    public static final String TEXT_PLAIN = "text/plain";
     /**
      * Media Type for Application/EDIFACT
      */

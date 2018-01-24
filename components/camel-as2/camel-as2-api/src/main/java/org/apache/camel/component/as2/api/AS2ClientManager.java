@@ -23,10 +23,12 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
+import org.apache.camel.component.as2.api.entity.ApplicationEDIEntity;
 import org.apache.camel.component.as2.api.entity.ApplicationEDIFACTEntity;
 import org.apache.camel.component.as2.api.entity.MultipartSignedEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
+import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHttpEntityEnclosingRequest;
 import org.apache.http.protocol.HttpCoreContext;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -167,7 +169,7 @@ public class AS2ClientManager {
 
         // Create Message Body
         ApplicationEDIFACTEntity applicationEDIFACTEntity = new ApplicationEDIFACTEntity(ediMessage,
-                AS2CharSet.US_ASCII, AS2TransferEncoding.BASE64, false);
+                AS2CharSet.US_ASCII, AS2TransferEncoding.NONE, false);
         switch (messageStructure) {
         case PLAIN:
             applicationEDIFACTEntity.setMainBody(true);
@@ -228,7 +230,7 @@ public class AS2ClientManager {
         // Create Multipart Signed Message Body
         try {
             MultipartSignedEntity multipartSignedEntity = new MultipartSignedEntity(applicationEDIFACTEntity, gen,
-                    AS2CharSet.US_ASCII, AS2TransferEncoding.BASE64, false, null);
+                    AS2CharSet.US_ASCII, AS2TransferEncoding.NONE, false, null);
             request.setEntity(multipartSignedEntity);
         } catch (Exception e) {
             throw new HttpException("Failed to sign message", e);

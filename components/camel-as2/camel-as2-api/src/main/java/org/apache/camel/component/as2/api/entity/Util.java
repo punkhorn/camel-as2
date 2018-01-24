@@ -75,7 +75,7 @@ public class Util {
                 }
                 switch (contentType.getMimeType().toLowerCase()) {
                 case "application/edifact":
-                    entity = ApplicationEDIFACTEntity.parseEntity(entity, contentType.getParameter(AS2CharSet.PARAM), true);
+                    entity = ApplicationEDIEntity.parseEntity(entity, true);
                     ((HttpEntityEnclosingRequest) request).setEntity(entity);
                     break;
                 case "application/edi-x12":

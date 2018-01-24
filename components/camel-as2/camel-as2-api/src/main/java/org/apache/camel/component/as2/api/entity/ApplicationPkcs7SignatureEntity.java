@@ -28,6 +28,7 @@ import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
 import org.apache.http.HttpException;
 import org.apache.http.entity.ContentType;
+import org.apache.http.util.Args;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
@@ -44,11 +45,15 @@ public class ApplicationPkcs7SignatureEntity extends MimeEntity {
     private final CMSSignedData signedData;
     
     public ApplicationPkcs7SignatureEntity(MimeEntity data, CMSSignedDataGenerator signer, String charset, String contentTransferEncoding, boolean isMainBody) throws HttpException {
-        super(ContentType.parse(Util.appendParameter(AS2MediaType.APPLICATION_PKCS7_SIGNATURE, "charset",  charset)), contentTransferEncoding, isMainBody);
-        addHeader(this.contentType);
-        addHeader(this.contentTransferEncoding);
+        Args.notNull(data, "Data");
+        Args.notNull(signer, "Signer");
+
+        ContentType contentType = ContentType.parse(Util.appendParameter(AS2MediaType.APPLICATION_PKCS7_SIGNATURE, "charset",  charset));
+        setContentType(Args.notNull(contentType, "Content Type").toString());
+        setContentTransferEncoding(contentTransferEncoding);
         addHeader(AS2Header.CONTENT_DISPOSITION, CONTENT_DISPOSITION);
         addHeader(AS2Header.CONTENT_DESCRIPTION, CONTENT_DESCRIPTION);
+        setMainBody(isMainBody);
         try {
             this.signedData = signature(data, signer);
         } catch (Exception e) {
