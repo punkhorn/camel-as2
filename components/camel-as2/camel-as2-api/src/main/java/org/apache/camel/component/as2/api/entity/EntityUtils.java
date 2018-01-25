@@ -3,14 +3,14 @@ package org.apache.camel.component.as2.api.entity;
 import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.camel.component.as2.api.AS2CharSet;
+import org.apache.camel.component.as2.api.AS2MediaType;
 import org.apache.commons.codec.binary.Base64OutputStream;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.entity.ContentType;
 
-public class Util {
+public class EntityUtils {
 
     private static AtomicLong partNumber = new AtomicLong();
 
@@ -60,6 +60,20 @@ public class Util {
         default:
             throw new Exception("Unknown encoding: " + encoding);
         }
+    }
+    
+    public static ApplicationEDIEntity createEDIEntity(String ediMessage, ContentType ediMessageContentType, String contentTransferEncoding, boolean isMainBody) throws Exception {
+        switch(ediMessageContentType.getMimeType().toLowerCase()) {
+        case AS2MediaType.APPLICATION_EDIFACT:
+            return new ApplicationEDIFACTEntity(ediMessage, ediMessageContentType.getCharset().toString(), contentTransferEncoding, isMainBody);            
+        case AS2MediaType.APPLICATION_EDI_X12:
+            return new ApplicationEDIX12Entity(ediMessage, ediMessageContentType.getCharset().toString(), contentTransferEncoding, isMainBody);            
+        case AS2MediaType.APPLICATION_EDI_CONSENT:
+            return new ApplicationEDIConsentEntity(ediMessage, ediMessageContentType.getCharset().toString(), contentTransferEncoding, isMainBody);            
+        default:
+            throw new Exception("Invalid EDI entity mime type: " + ediMessageContentType.getMimeType());
+        }
+        
     }
 
     public static void parseAS2MessageEntity(HttpRequest request) throws Exception {

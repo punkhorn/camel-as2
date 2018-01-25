@@ -15,6 +15,7 @@ import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.config.SocketConfig;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.bootstrap.HttpServer;
 import org.apache.http.impl.bootstrap.ServerBootstrap;
 import org.apache.http.protocol.HttpContext;
@@ -116,7 +117,7 @@ public class AS2MessageTest {
                     public void handle(HttpRequest request, HttpResponse response, HttpContext context)
                             throws HttpException, IOException {
                         try {
-                            org.apache.camel.component.as2.api.entity.Util.parseAS2MessageEntity(request);
+                            org.apache.camel.component.as2.api.entity.EntityUtils.parseAS2MessageEntity(request);
                         } catch (Exception e) {
                             throw new HttpException("Failed to parse AS2 Message Entity", e);
                         }
@@ -167,7 +168,7 @@ public class AS2MessageTest {
     }
     
 //    @Test
-    public void multipartPlainMessageTest() throws Exception {
+    public void plainEDIMessageTest() throws Exception {
         AS2ClientConnection clientConnection = new AS2ClientConnection(AS2_VERSION, USER_AGENT, CLIENT_FQDN, TARGET_HOST, TARGET_PORT);
         AS2ClientManager clientManager = new AS2ClientManager(clientConnection);
         
@@ -185,7 +186,7 @@ public class AS2MessageTest {
         HttpRequest request = httpContext.getRequest();
     }
 
-//    @Test
+    @Test
     public void multipartSignedMessageTest() throws Exception {
         AS2ClientConnection clientConnection = new AS2ClientConnection(AS2_VERSION, USER_AGENT, CLIENT_FQDN, TARGET_HOST, TARGET_PORT);
         AS2ClientManager clientManager = new AS2ClientManager(clientConnection);
@@ -198,6 +199,7 @@ public class AS2MessageTest {
         httpContext.setAttribute(AS2ClientManager.AS2_FROM, AS2_NAME);
         httpContext.setAttribute(AS2ClientManager.AS2_TO, AS2_NAME);
         httpContext.setAttribute(AS2ClientManager.AS2_MESSAGE_STRUCTURE, AS2MessageStructure.SIGNED);
+        httpContext.setAttribute(AS2ClientManager.EDI_MESSAGE_CONTENT_TYPE, ContentType.create(AS2MediaType.APPLICATION_EDIFACT, AS2CharSet.US_ASCII));
         httpContext.setAttribute(AS2ClientManager.SIGNING_ALGORITHM_NAME, algorithmName);
         httpContext.setAttribute(AS2ClientManager.SIGNING_CERTIFICATE_CHAIN, chain);
         httpContext.setAttribute(AS2ClientManager.SIGNING_PRIVATE_KEY, privateKey);

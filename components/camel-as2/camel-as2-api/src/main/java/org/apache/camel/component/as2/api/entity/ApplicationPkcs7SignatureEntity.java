@@ -48,7 +48,7 @@ public class ApplicationPkcs7SignatureEntity extends MimeEntity {
         Args.notNull(data, "Data");
         Args.notNull(signer, "Signer");
 
-        ContentType contentType = ContentType.parse(Util.appendParameter(AS2MediaType.APPLICATION_PKCS7_SIGNATURE, "charset",  charset));
+        ContentType contentType = ContentType.parse(EntityUtils.appendParameter(AS2MediaType.APPLICATION_PKCS7_SIGNATURE, "charset",  charset));
         setContentType(Args.notNull(contentType, "Content Type").toString());
         setContentTransferEncoding(contentTransferEncoding);
         addHeader(AS2Header.CONTENT_DISPOSITION, CONTENT_DISPOSITION);
@@ -90,7 +90,7 @@ public class ApplicationPkcs7SignatureEntity extends MimeEntity {
 
         // Write out signed data.
         String transferEncoding = getContentTransferEncoding() == null ? null : getContentTransferEncoding().getValue();
-        try (OutputStream trasnsferEncodedStream = Util.encode(ncos, transferEncoding)) {
+        try (OutputStream trasnsferEncodedStream = EntityUtils.encode(ncos, transferEncoding)) {
 
             trasnsferEncodedStream.write(signedData.getEncoded());
         } catch (Exception e) {

@@ -40,9 +40,9 @@ public abstract class ApplicationEDIEntity extends MimeEntity {
     public static HttpEntity parseEntity(HttpEntity entity, boolean isMainBody) throws Exception{
         Args.notNull(entity, "Entity");
         Args.check(entity.isStreaming(), "Entity is not streaming");
-        ApplicationEDIEntity applicationEDIFACTEntity = null;
+        ApplicationEDIEntity applicationEDIEntity = null;
         Header[] headers = null;
-
+        
         // Determine Transfer Encoding
         Header transferEncoding = entity.getContentEncoding();
         String contentTransferEncoding = transferEncoding == null ? null : transferEncoding.getValue();
@@ -66,20 +66,15 @@ public abstract class ApplicationEDIEntity extends MimeEntity {
             lineBuffer.append("\r\n"); // add line delimiter
         }
         
-        // Build application EDIFACT entity
+        // Build application EDI entity
         ContentType contentType =  ContentType.parse(entity.getContentType().getValue());
-        switch(contentType.getMimeType()) {
-        case AS2MediaType.APPLICATION_EDIFACT:
-            applicationEDIFACTEntity = new ApplicationEDIFACTEntity(lineBuffer.toString(), contentType.getCharset().toString(), contentTransferEncoding, isMainBody);            break;
-        default:
-            throw new Exception("Invalid EDI entity mime type: " + contentType.getMimeType());
-        }
+        applicationEDIEntity = EntityUtils.createEDIEntity(lineBuffer.toString(), contentType, contentTransferEncoding, isMainBody);
 
         if (headers != null) {
-            applicationEDIFACTEntity.setHeaders(headers);
+            applicationEDIEntity.setHeaders(headers);
         }
         
-        return applicationEDIFACTEntity;
+        return applicationEDIEntity;
     }
 
 

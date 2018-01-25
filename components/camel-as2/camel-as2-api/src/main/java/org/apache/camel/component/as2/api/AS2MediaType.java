@@ -35,7 +35,11 @@ public class AS2MediaType {
      */
     public static final String APPLICATION_EDIFACT = "application/edifact";
     /**
-     * Media Type for Application/EDIFACT
+     * Media Type for Application/EDI-X12
      */
     public static final String APPLICATION_EDI_X12 = "application/edi-x12";
+    /**
+     * Media Type for Application/EDI-consent
+     */
+    public static final String APPLICATION_EDI_CONSENT = "application/edi-consent";
 }
