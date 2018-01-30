@@ -17,8 +17,10 @@
 package org.apache.camel.component.as2.api;
 
 import java.awt.event.KeyEvent;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -92,6 +94,15 @@ public class Util {
                 c != KeyEvent.CHAR_UNDEFINED &&
                 block != null &&
                 block != Character.UnicodeBlock.SPECIALS;
+    }
+    
+    public static String printRequest(HttpRequest request) throws IOException {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                PrintStream ps = new PrintStream(baos, true, "utf-8")) {
+            printRequest(ps, request);
+            String content = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+            return content;
+        }
     }
     
     /**

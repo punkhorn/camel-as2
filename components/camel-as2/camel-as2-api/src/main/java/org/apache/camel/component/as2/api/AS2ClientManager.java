@@ -24,7 +24,6 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
 import org.apache.camel.component.as2.api.entity.ApplicationEDIEntity;
-import org.apache.camel.component.as2.api.entity.ApplicationEDIFACTEntity;
 import org.apache.camel.component.as2.api.entity.EntityUtils;
 import org.apache.camel.component.as2.api.entity.MultipartSignedEntity;
 import org.apache.http.HttpException;
