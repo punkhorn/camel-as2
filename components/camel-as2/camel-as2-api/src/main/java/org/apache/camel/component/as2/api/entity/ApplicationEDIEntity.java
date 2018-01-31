@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import org.apache.camel.component.as2.api.AS2CharSet;
-import org.apache.camel.component.as2.api.AS2MediaType;
 import org.apache.camel.component.as2.api.CanonicalOutputStream;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.io.AbstractMessageParser;
 import org.apache.http.impl.io.HttpTransportMetricsImpl;
@@ -35,46 +35,64 @@ import org.apache.http.util.CharArrayBuffer;
 
 public abstract class ApplicationEDIEntity extends MimeEntity {
     
+    private static final String APPLICATION_EDIT_CONTENT_TYPE_PREFIX = "application/edi";
+    
     private final String content;
     
-    public static HttpEntity parseEntity(HttpEntity entity, boolean isMainBody) throws Exception{
+    public static HttpEntity parseEntity(HttpEntity entity, boolean isMainBody) throws HttpException {
         Args.notNull(entity, "Entity");
         Args.check(entity.isStreaming(), "Entity is not streaming");
         ApplicationEDIEntity applicationEDIEntity = null;
         Header[] headers = null;
         
-        // Determine Transfer Encoding
-        Header transferEncoding = entity.getContentEncoding();
-        String contentTransferEncoding = transferEncoding == null ? null : transferEncoding.getValue();
-        
-        SessionInputBufferImpl inBuffer = new SessionInputBufferImpl(new HttpTransportMetricsImpl(), 8 * 1024);
-        inBuffer.bind(entity.getContent());
-        
-        // Parse Headers
-        if (!isMainBody) {
-           headers = AbstractMessageParser.parseHeaders(
-                    inBuffer,
-                    -1,
-                    -1,
-                    BasicLineParser.INSTANCE,
-                    null);
-        }
-        
-        // Extract content from stream
-        CharArrayBuffer lineBuffer = new CharArrayBuffer(1024);
-        while(inBuffer.readLine(lineBuffer) != -1) {
-            lineBuffer.append("\r\n"); // add line delimiter
-        }
-        
-        // Build application EDI entity
-        ContentType contentType =  ContentType.parse(entity.getContentType().getValue());
-        applicationEDIEntity = EntityUtils.createEDIEntity(lineBuffer.toString(), contentType, contentTransferEncoding, isMainBody);
+        try {
+            
+            // Determine and validate the Content Type
+            Header contentTypeHeader = entity.getContentType();
+            if (contentTypeHeader == null) {
+                throw new HttpException("Content-Type header is missing");
+            }
+            ContentType contentType = ContentType.parse(entity.getContentType().getValue());
+            if (!contentType.getMimeType().startsWith(APPLICATION_EDIT_CONTENT_TYPE_PREFIX)) {
+                throw new HttpException("Entity has invalid MIME type '" + contentType.getMimeType() + "'");
+            }
 
-        if (headers != null) {
-            applicationEDIEntity.setHeaders(headers);
-        }
+            // Determine Transfer Encoding
+            Header transferEncoding = entity.getContentEncoding();
+            String contentTransferEncoding = transferEncoding == null ? null : transferEncoding.getValue();
         
-        return applicationEDIEntity;
+            SessionInputBufferImpl inBuffer = new SessionInputBufferImpl(new HttpTransportMetricsImpl(), 8 * 1024);
+            inBuffer.bind(entity.getContent());
+            
+            // Parse Headers
+            if (!isMainBody) {
+               headers = AbstractMessageParser.parseHeaders(
+                        inBuffer,
+                        -1,
+                        -1,
+                        BasicLineParser.INSTANCE,
+                        null);
+            }
+            
+            // Extract content from stream
+            CharArrayBuffer lineBuffer = new CharArrayBuffer(1024);
+            while(inBuffer.readLine(lineBuffer) != -1) {
+                lineBuffer.append("\r\n"); // add line delimiter
+            }
+            
+            // Build application EDI entity
+            applicationEDIEntity = EntityUtils.createEDIEntity(lineBuffer.toString(), contentType, contentTransferEncoding, isMainBody);
+
+            if (headers != null) {
+                applicationEDIEntity.setHeaders(headers);
+            }
+            
+            return applicationEDIEntity;
+        } catch (HttpException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new HttpException("Failed to parse entity content", e);
+        }
     }
 
 
