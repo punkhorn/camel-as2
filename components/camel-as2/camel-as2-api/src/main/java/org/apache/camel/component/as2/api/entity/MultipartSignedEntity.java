@@ -1,20 +1,22 @@
 package org.apache.camel.component.as2.api.entity;
 
+import java.io.IOException;
+
 import org.apache.camel.component.as2.api.AS2Header;
 import org.apache.camel.component.as2.api.AS2MimeType;
 import org.apache.camel.component.as2.api.AS2SignedDataGenerator;
 import org.apache.http.Header;
-import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
-import org.apache.http.NameValuePair;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.io.AbstractMessageParser;
 import org.apache.http.impl.io.HttpTransportMetricsImpl;
 import org.apache.http.impl.io.SessionInputBufferImpl;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicLineParser;
+import org.apache.http.message.ParserCursor;
 import org.apache.http.util.Args;
+import org.apache.http.util.CharArrayBuffer;
 
 public class MultipartSignedEntity extends MultipartMimeEntity {
 
@@ -64,20 +66,48 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
                         null);
             }
             
-            // Get Boundary Value
-            String boundary = contentType.getParameter("boundary");
-            if (boundary == null) {
-                throw new HttpException("Failed to retrive boundary value");
-            }
-            
-            // TODO: parse encapsulated parts and create sub-entities. 
-            
             multipartSignedEntity = new MultipartSignedEntity();
             
             if (headers != null) {
                 multipartSignedEntity.setHeaders(headers);
             }
 
+            // Get Boundary Value
+            String boundary = contentType.getParameter("boundary");
+            if (boundary == null) {
+                throw new HttpException("Failed to retrive boundary value");
+            }
+            
+            //
+            // Parse EDI Message Part
+            //
+            
+            // Skip Preamble and Start Boundary line
+            skipPreambleAndStartBoundary(inBuffer);
+            
+            // Read Body Part Headers
+            headers = AbstractMessageParser.parseHeaders(
+                    inBuffer,
+                    -1,
+                    -1,
+                    BasicLineParser.INSTANCE,
+                    null);
+            
+            // Get Content-Type
+            ContentType ediMesssageContentType;
+            for (Header header : headers) {
+                if (header.getName().equalsIgnoreCase(AS2Header.CONTENT_TYPE)) {
+                    ediMesssageContentType = ContentType.parse(header.getValue());
+                }
+            }
+           
+            // - Read Body Part Content
+            // - Create, Populate and Add Body Part
+            
+            
+            //
+            // End Body Parts
+            
             return multipartSignedEntity;
         } catch (HttpException e) {
             throw e;
@@ -86,4 +116,74 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
         }
     }
     
+    public void skipPreambleAndStartBoundary(SessionInputBufferImpl inBuffer) throws HttpException {
+
+        boolean foundStartBoundary;
+        try {
+            foundStartBoundary = false;
+            CharArrayBuffer lineBuffer = new CharArrayBuffer(1024);
+            while(inBuffer.readLine(lineBuffer) != -1) {
+                final ParserCursor cursor = new ParserCursor(0, lineBuffer.length());
+                if (isBoundaryDelimiter(lineBuffer, cursor, boundary)) {
+                    foundStartBoundary = true;
+                    break;
+                }
+                lineBuffer.clear();
+            }
+        } catch (Exception e) {
+            throw new HttpException("Failed to read start boundary for body part", e);
+        }
+        
+        if (!foundStartBoundary) {
+            throw new HttpException("Failed to find start boundary for body part");
+        }
+        
+    }
+    
+    public boolean isBoundaryDelimiter(final CharArrayBuffer buffer, final ParserCursor cursor, String boundary) {
+        Args.notNull(buffer, "Buffer");
+        Args.notNull(cursor, "Cursor");
+
+        String boundaryDelimiter = "--" + boundary; // boundary delimiter - RFC2046 5.1.1
+        
+        int indexFrom = cursor.getPos();
+        int indexTo = cursor.getUpperBound();
+        
+        // boundary delimiter must occupy entire line - RFC2046 5.1.1
+        if ((indexFrom + boundaryDelimiter.length()) != indexTo) {
+            return false; 
+        }
+        
+        for (int i = indexFrom; i < indexTo; ++i) {
+            if (buffer.charAt(i) != boundaryDelimiter.charAt(i)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    public boolean isBoundaryCloseDelimiter(final CharArrayBuffer buffer, final ParserCursor cursor, String boundary) {
+        Args.notNull(buffer, "Buffer");
+        Args.notNull(cursor, "Cursor");
+
+        String boundaryCloseDelimiter = "--" + boundary + "--"; // boundary close-delimiter - RFC2046 5.1.1
+        
+        int indexFrom = cursor.getPos();
+        int indexTo = cursor.getUpperBound();
+        
+        // boundary closing-delimiter must occupy entire line - RFC2046 5.1.1
+        if ((indexFrom + boundaryCloseDelimiter.length()) != indexTo) {
+            return false; 
+        }
+        
+        for (int i = indexFrom; i < indexTo; ++i) {
+            if (buffer.charAt(i) != boundaryCloseDelimiter.charAt(i)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
 }

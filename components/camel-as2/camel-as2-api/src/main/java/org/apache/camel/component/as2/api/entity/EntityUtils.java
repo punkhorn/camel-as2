@@ -9,6 +9,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.entity.ContentType;
+import org.apache.http.util.Args;
 
 public class EntityUtils {
 
@@ -42,6 +43,8 @@ public class EntityUtils {
     }
     
     public static OutputStream encode(OutputStream os, String encoding) throws Exception {
+        Args.notNull(os, "Output Stream");
+        
         if (encoding == null) {
             // Identity encoding
             return os;
@@ -63,6 +66,9 @@ public class EntityUtils {
     }
     
     public static ApplicationEDIEntity createEDIEntity(String ediMessage, ContentType ediMessageContentType, String contentTransferEncoding, boolean isMainBody) throws Exception {
+        Args.notNull(ediMessage, "EDI Message");
+        Args.notNull(ediMessageContentType, "EDI Message Content Type");
+        
         switch(ediMessageContentType.getMimeType().toLowerCase()) {
         case AS2MediaType.APPLICATION_EDIFACT:
             return new ApplicationEDIFACTEntity(ediMessage, ediMessageContentType.getCharset().toString(), contentTransferEncoding, isMainBody);            
