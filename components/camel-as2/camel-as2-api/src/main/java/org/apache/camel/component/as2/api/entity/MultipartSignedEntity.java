@@ -83,7 +83,7 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
             // Skip Preamble and Start Boundary line
             skipPreambleAndStartBoundary(inBuffer, boundary);
             
-            // Read Body Part Headers
+            // Read EDI Message Body Part Headers
             headers = AbstractMessageParser.parseHeaders(
                     inBuffer,
                     -1,
