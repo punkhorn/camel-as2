@@ -1,15 +1,19 @@
 package org.apache.camel.component.as2.api.entity;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.camel.component.as2.api.AS2MediaType;
+import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.codec.binary.Base64OutputStream;
+import org.apache.commons.codec.net.QuotedPrintableCodec;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.util.Args;
+import org.bouncycastle.util.encoders.Base64;
 
 public class EntityUtils {
 
@@ -60,6 +64,51 @@ public class EntityUtils {
         case "8bit":
             // Identity encoding
             return os;
+        default:
+            throw new Exception("Unknown encoding: " + encoding);
+        }
+    }
+    
+    public static byte[] decode(byte[] data, String encoding) throws Exception {
+        Args.notNull(data, "Input Stream");
+        
+        if (encoding == null) {
+            // Identity encoding
+            return data;
+        }
+        switch (encoding.toLowerCase()) {
+        case "base64":
+            return Base64.decode(data);
+        case "quoted-printable":
+            return QuotedPrintableCodec.decodeQuotedPrintable(data);
+        case "binary":
+        case "7bit":
+        case "8bit":
+            // Identity encoding
+            return data;
+        default:
+            throw new Exception("Unknown encoding: " + encoding);
+        }
+    }
+    
+    public static InputStream decode(InputStream is, String encoding) throws Exception {
+        Args.notNull(is, "Input Stream");
+        
+        if (encoding == null) {
+            // Identity encoding
+            return is;
+        }
+        switch (encoding.toLowerCase()) {
+        case "base64":
+            return new Base64InputStream(is, false);
+        case "quoted-printable":
+            // TODO: implement QuotedPrintableInputStream
+            return new Base64InputStream(is, false);
+        case "binary":
+        case "7bit":
+        case "8bit":
+            // Identity encoding
+            return is;
         default:
             throw new Exception("Unknown encoding: " + encoding);
         }

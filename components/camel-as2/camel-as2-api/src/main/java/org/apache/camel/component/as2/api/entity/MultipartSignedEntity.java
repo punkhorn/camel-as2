@@ -1,8 +1,10 @@
 package org.apache.camel.component.as2.api.entity;
 
-import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.camel.component.as2.api.AS2Header;
+import org.apache.camel.component.as2.api.AS2MediaType;
 import org.apache.camel.component.as2.api.AS2MimeType;
 import org.apache.camel.component.as2.api.AS2SignedDataGenerator;
 import org.apache.http.Header;
@@ -32,7 +34,7 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
     protected MultipartSignedEntity() {
     }
     
-    public HttpEntity parseEntity(HttpEntity entity, boolean isMainBody) throws Exception{
+    public static HttpEntity parseMultipartSignedEntity(HttpEntity entity, boolean isMainBody) throws Exception{
         Args.notNull(entity, "Entity");
         Args.check(entity.isStreaming(), "Entity is not streaming");
         MultipartSignedEntity multipartSignedEntity = null;
@@ -44,15 +46,11 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
             if (contentTypeHeader == null) {
                 throw new HttpException("Content-Type header is missing");
             }
-            ContentType contentType =  ContentType.parse(entity.getContentType().getValue());
-            if (!contentType.getMimeType().equals(AS2MimeType.MULTIPART_SIGNED)) {
-                throw new HttpException("Entity has invalid MIME type '" + contentType.getMimeType() + "'");
+            ContentType multipartSignedContentType =  ContentType.parse(entity.getContentType().getValue());
+            if (!multipartSignedContentType.getMimeType().equals(AS2MimeType.MULTIPART_SIGNED)) {
+                throw new HttpException("Entity has invalid MIME type '" + multipartSignedContentType.getMimeType() + "'");
             }
 
-            // Determine Transfer Encoding
-            Header transferEncoding = entity.getContentEncoding();
-            String contentTransferEncoding = transferEncoding == null ? null : transferEncoding.getValue();
-            
             SessionInputBufferImpl inBuffer = new SessionInputBufferImpl(new HttpTransportMetricsImpl(), 8 * 1024);
             inBuffer.bind(entity.getContent());
             
@@ -73,17 +71,17 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
             }
 
             // Get Boundary Value
-            String boundary = contentType.getParameter("boundary");
+            String boundary = multipartSignedContentType.getParameter("boundary");
             if (boundary == null) {
                 throw new HttpException("Failed to retrive boundary value");
             }
             
             //
-            // Parse EDI Message Part
+            // Parse EDI Message Body Part
             //
             
             // Skip Preamble and Start Boundary line
-            skipPreambleAndStartBoundary(inBuffer);
+            skipPreambleAndStartBoundary(inBuffer, boundary);
             
             // Read Body Part Headers
             headers = AbstractMessageParser.parseHeaders(
@@ -93,20 +91,61 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
                     BasicLineParser.INSTANCE,
                     null);
             
-            // Get Content-Type
-            ContentType ediMesssageContentType;
+            // Get Content-Type and Content-Transfer-Encoding
+            ContentType ediMessageContentType = null;
+            String ediMessageContentTransferEncoding = null;
             for (Header header : headers) {
-                if (header.getName().equalsIgnoreCase(AS2Header.CONTENT_TYPE)) {
-                    ediMesssageContentType = ContentType.parse(header.getValue());
+                switch (header.getName().toLowerCase()) {
+                case AS2Header.CONTENT_TYPE:
+                    ediMessageContentType = ContentType.parse(header.getValue());
+                    break;
+                case AS2Header.CONTENT_TRANSFER_ENCODING:
+                    ediMessageContentTransferEncoding = header.getValue();
+                    break;
                 }
             }
-           
-            // - Read Body Part Content
-            // - Create, Populate and Add Body Part
+            if (ediMessageContentType == null) {
+                throw new HttpException("Failed to find Content-Type header in EDI message body part");
+            }
+            if (!isEDIMessageContentType(ediMessageContentType)) {
+                throw new HttpException("Invalid content type '" + ediMessageContentType.getMimeType() + "' for EDI message body part");
+            }
             
+           
+            // - Read EDI Message Body Part Content
+            CharArrayBuffer ediMessageContentBuffer = new CharArrayBuffer(1024);
+            CharArrayBuffer lineBuffer = new CharArrayBuffer(1024);
+            boolean foundMultipartEndBoundary = false;
+            while(inBuffer.readLine(lineBuffer) != -1) {
+                if (isBoundaryDelimiter(lineBuffer, null, boundary)) {
+                    foundMultipartEndBoundary = true;
+                    lineBuffer.clear();
+                    break;
+                }
+                ediMessageContentBuffer.append(lineBuffer);
+                ediMessageContentBuffer.append("\r\n"); // add line delimiter
+                lineBuffer.clear();
+            }
+            if (!foundMultipartEndBoundary) {
+                throw new HttpException("Failed to find end boundary delimiter for EDI message body part");
+            }
+            
+            // Decode Content
+            Charset ediMessageCharset = ediMessageContentType.getCharset();
+            if (ediMessageCharset == null) {
+                ediMessageCharset = StandardCharsets.US_ASCII;
+            }
+            byte[] bytes = EntityUtils.decode(ediMessageContentBuffer.toString().getBytes(ediMessageCharset), ediMessageContentTransferEncoding);
+            String ediMessageContent = new String(bytes, ediMessageCharset);
+            
+            // Build application EDI entity and add to multipart.
+            ApplicationEDIEntity applicationEDIEntity = EntityUtils.createEDIEntity(ediMessageContent, ediMessageContentType, ediMessageContentTransferEncoding, false);
+            applicationEDIEntity.removeAllHeaders();
+            applicationEDIEntity.setHeaders(headers);
+            multipartSignedEntity.addPart(applicationEDIEntity);
             
             //
-            // End Body Parts
+            // End EDI Message Body Parts
             
             return multipartSignedEntity;
         } catch (HttpException e) {
@@ -116,7 +155,20 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
         }
     }
     
-    public void skipPreambleAndStartBoundary(SessionInputBufferImpl inBuffer) throws HttpException {
+    public static boolean isEDIMessageContentType(ContentType ediMessageContentType) {
+        switch(ediMessageContentType.getMimeType().toLowerCase()) {
+        case AS2MediaType.APPLICATION_EDIFACT:
+            return true;
+        case AS2MediaType.APPLICATION_EDI_X12:
+            return true;
+        case AS2MediaType.APPLICATION_EDI_CONSENT:
+            return true;
+        default:
+            return false;
+        }
+    }
+    
+    public static void skipPreambleAndStartBoundary(SessionInputBufferImpl inBuffer, String boundary) throws HttpException {
 
         boolean foundStartBoundary;
         try {
@@ -140,17 +192,19 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
         
     }
     
-    public boolean isBoundaryDelimiter(final CharArrayBuffer buffer, final ParserCursor cursor, String boundary) {
+    public static boolean isBoundaryDelimiter(final CharArrayBuffer buffer, ParserCursor cursor, String boundary) {
         Args.notNull(buffer, "Buffer");
-        Args.notNull(cursor, "Cursor");
+        Args.notNull(boundary, "Boundary");
+        if (cursor == null) {
+            cursor = new ParserCursor(0, buffer.length());
+        }
 
         String boundaryDelimiter = "--" + boundary; // boundary delimiter - RFC2046 5.1.1
         
         int indexFrom = cursor.getPos();
         int indexTo = cursor.getUpperBound();
         
-        // boundary delimiter must occupy entire line - RFC2046 5.1.1
-        if ((indexFrom + boundaryDelimiter.length()) != indexTo) {
+        if ((indexFrom + boundaryDelimiter.length()) > indexTo) {
             return false; 
         }
         
@@ -163,17 +217,19 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
         return true;
     }
 
-    public boolean isBoundaryCloseDelimiter(final CharArrayBuffer buffer, final ParserCursor cursor, String boundary) {
+    public static boolean isBoundaryCloseDelimiter(final CharArrayBuffer buffer, ParserCursor cursor, String boundary) {
         Args.notNull(buffer, "Buffer");
-        Args.notNull(cursor, "Cursor");
+        Args.notNull(boundary, "Boundary");
+        if (cursor == null) {
+            cursor = new ParserCursor(0, buffer.length());
+        }
 
         String boundaryCloseDelimiter = "--" + boundary + "--"; // boundary close-delimiter - RFC2046 5.1.1
         
         int indexFrom = cursor.getPos();
         int indexTo = cursor.getUpperBound();
         
-        // boundary closing-delimiter must occupy entire line - RFC2046 5.1.1
-        if ((indexFrom + boundaryCloseDelimiter.length()) != indexTo) {
+        if ((indexFrom + boundaryCloseDelimiter.length()) > indexTo) {
             return false; 
         }
         

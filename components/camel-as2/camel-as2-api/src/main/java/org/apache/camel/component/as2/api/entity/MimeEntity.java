@@ -176,6 +176,10 @@ public abstract class MimeEntity extends AbstractHttpEntity {
             }
         }
     }
+    
+    public void removeAllHeaders() {
+        this.headergroup.clear();
+    }
 
     public HeaderIterator headerIterator() {
         return this.headergroup.iterator();
