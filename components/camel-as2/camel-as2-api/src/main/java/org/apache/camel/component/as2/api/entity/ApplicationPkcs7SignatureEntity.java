@@ -29,12 +29,10 @@ import org.apache.http.HeaderIterator;
 import org.apache.http.HttpException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.util.Args;
-import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.cms.CMSSignedDataGenerator;
 import org.bouncycastle.cms.CMSTypedData;
-import org.bouncycastle.util.encoders.Base64;
 
 public class ApplicationPkcs7SignatureEntity extends MimeEntity {
     
@@ -42,31 +40,33 @@ public class ApplicationPkcs7SignatureEntity extends MimeEntity {
     
     private static final String CONTENT_DESCRIPTION = "S/MIME Cryptographic Signature";
     
-    private final CMSSignedData signedData;
+    private byte[] signature;
     
     public ApplicationPkcs7SignatureEntity(MimeEntity data, CMSSignedDataGenerator signer, String charset, String contentTransferEncoding, boolean isMainBody) throws HttpException {
         Args.notNull(data, "Data");
         Args.notNull(signer, "Signer");
-
+        
         ContentType contentType = ContentType.parse(EntityUtils.appendParameter(AS2MediaType.APPLICATION_PKCS7_SIGNATURE, "charset",  charset));
-        setContentType(Args.notNull(contentType, "Content Type").toString());
+        setContentType(contentType.toString());
         setContentTransferEncoding(contentTransferEncoding);
         addHeader(AS2Header.CONTENT_DISPOSITION, CONTENT_DISPOSITION);
         addHeader(AS2Header.CONTENT_DESCRIPTION, CONTENT_DESCRIPTION);
         setMainBody(isMainBody);
         try {
-            this.signedData = signature(data, signer);
+            this.signature = signature(data, signer);
         } catch (Exception e) {
             throw new HttpException("Failed to create signed data", e);
         }
     }
     
-    public ApplicationPkcs7SignatureEntity(String signedData) throws HttpException {
-        try {
-            this.signedData = new CMSSignedData(Base64.decode(signedData.getBytes()));
-        } catch (CMSException e) {
-            throw new HttpException("Failed to decode signed data", e);
-        }
+    public ApplicationPkcs7SignatureEntity(String charset, String contentTransferEncoding, byte[] signature, boolean isMainBody) throws HttpException {
+            this.signature = signature;
+            ContentType contentType = ContentType.parse(EntityUtils.appendParameter(AS2MediaType.APPLICATION_PKCS7_SIGNATURE, "charset",  charset));
+            setContentType(contentType.toString());
+            setContentTransferEncoding(contentTransferEncoding);
+            addHeader(AS2Header.CONTENT_DISPOSITION, CONTENT_DISPOSITION);
+            addHeader(AS2Header.CONTENT_DESCRIPTION, CONTENT_DESCRIPTION);
+            setMainBody(isMainBody);
     }
 
     @Override
@@ -92,19 +92,20 @@ public class ApplicationPkcs7SignatureEntity extends MimeEntity {
         String transferEncoding = getContentTransferEncoding() == null ? null : getContentTransferEncoding().getValue();
         try (OutputStream trasnsferEncodedStream = EntityUtils.encode(ncos, transferEncoding)) {
 
-            trasnsferEncodedStream.write(signedData.getEncoded());
+            trasnsferEncodedStream.write(signature);
         } catch (Exception e) {
             throw new IOException("Failed to write to output stream", e);
         }
     }
     
-    private CMSSignedData signature(MimeEntity data, CMSSignedDataGenerator signer) throws Exception {
+    private byte[] signature(MimeEntity data, CMSSignedDataGenerator signer) throws Exception {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
             data.writeTo(bos);
             bos.flush();
 
             CMSTypedData contentData = new CMSProcessableByteArray(bos.toByteArray());
-            return signer.generate(contentData, false);
+            CMSSignedData  signedData = signer.generate(contentData, false);
+            return signedData.getEncoded();
         } catch (Exception e) {
             throw new Exception("", e);
         }

@@ -18,6 +18,7 @@ package org.apache.camel.component.as2.api.entity;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 
 import org.apache.camel.component.as2.api.AS2CharSet;
 import org.apache.camel.component.as2.api.CanonicalOutputStream;
@@ -71,7 +72,7 @@ public abstract class ApplicationEDIEntity extends MimeEntity {
                         -1,
                         -1,
                         BasicLineParser.INSTANCE,
-                        null);
+                        new ArrayList<CharArrayBuffer>());
             }
             
             // Extract content from stream

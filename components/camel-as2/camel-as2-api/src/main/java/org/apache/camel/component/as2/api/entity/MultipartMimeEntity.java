@@ -25,7 +25,6 @@ public abstract class MultipartMimeEntity extends MimeEntity {
     }
 
     public MultipartMimeEntity(ContentType contentType, boolean isMainBody, String boundary) {
-//        super(contentType, null, isMainBody);
         setContentType(contentType);
         setMainBody(isMainBody);
         

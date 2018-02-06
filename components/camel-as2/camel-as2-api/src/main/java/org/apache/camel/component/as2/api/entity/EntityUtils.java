@@ -152,6 +152,8 @@ public class EntityUtils {
                 case "application/consent":
                     break;
                 case "multipart/signed":
+                    entity = MultipartSignedEntity.parseMultipartSignedEntity(entity, true);
+                    ((HttpEntityEnclosingRequest) request).setEntity(entity);
                     break;
                 case "application/pkcs7-mime":
                     break;

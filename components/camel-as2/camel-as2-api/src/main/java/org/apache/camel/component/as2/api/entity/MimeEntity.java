@@ -223,6 +223,9 @@ public abstract class MimeEntity extends AbstractHttpEntity {
     }
 
     public String getCharset() {
+        if (getContentType() == null) {
+            return AS2CharSet.US_ASCII;
+        }
         ContentType contentType = ContentType.parse(getContentType().getValue());
         Charset charset = contentType.getCharset();
         if (charset != null) {
