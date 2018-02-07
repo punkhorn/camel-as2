@@ -20,6 +20,10 @@ import org.apache.http.message.BasicLineParser;
 import org.apache.http.message.ParserCursor;
 import org.apache.http.util.Args;
 import org.apache.http.util.CharArrayBuffer;
+import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.cms.CMSProcessable;
+import org.bouncycastle.cms.CMSProcessableByteArray;
+import org.bouncycastle.cms.CMSSignedData;
 
 public class MultipartSignedEntity extends MultipartMimeEntity {
 
@@ -32,8 +36,45 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
         addPart(signature);
     }
     
-    protected MultipartSignedEntity(String boundary) {
+    protected MultipartSignedEntity(String boundary, boolean isMainBody) {
         this.boundary = boundary;
+        this.isMainBody = isMainBody;
+    }
+    
+    public boolean isValid() throws CMSException, Exception {
+        ApplicationEDIEntity applicationEDIEntity = getSignedDataEntity();
+        ApplicationPkcs7SignatureEntity applicationPkcs7SignatureEntity = getSignatureEntity();
+        
+        if (applicationEDIEntity == null || applicationPkcs7SignatureEntity == null) {
+            return false;
+        }
+        
+        String ediMessage = applicationEDIEntity.getEdiMessage();
+        ContentType ediMessageContentType = ContentType.parse(applicationEDIEntity.getContentTypeValue());
+        CMSProcessable signedContent = new CMSProcessableByteArray(ediMessage.getBytes(ediMessageContentType.getCharset()));
+        
+        byte[] signature = applicationPkcs7SignatureEntity.getSignature();
+        
+        
+        CMSSignedData signedData = new CMSSignedData(EntityUtils.decode(signature, applicationPkcs7SignatureEntity.getContentTransferEncodingValue()));
+        
+        return true;
+    }
+    
+    public ApplicationEDIEntity getSignedDataEntity() {
+        if (getPartCount() > 0 && getPart(0) instanceof ApplicationEDIEntity) {
+            return (ApplicationEDIEntity)  getPart(0);
+        }
+        
+        return null;
+    }
+    
+    public ApplicationPkcs7SignatureEntity getSignatureEntity() {
+        if (getPartCount() > 1 && getPart(0) instanceof ApplicationPkcs7SignatureEntity) {
+            return (ApplicationPkcs7SignatureEntity)  getPart(1);
+        }
+        
+        return null;
     }
     
     public static HttpEntity parseMultipartSignedEntity(HttpEntity entity, boolean isMainBody) throws Exception{
@@ -72,7 +113,7 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
                 throw new HttpException("Failed to retrive boundary value");
             }
             
-            multipartSignedEntity = new MultipartSignedEntity(boundary);
+            multipartSignedEntity = new MultipartSignedEntity(boundary, true);
             
             if (headers != null) {
                 multipartSignedEntity.setHeaders(headers);

@@ -38,7 +38,7 @@ public abstract class ApplicationEDIEntity extends MimeEntity {
     
     private static final String APPLICATION_EDIT_CONTENT_TYPE_PREFIX = "application/edi";
     
-    private final String content;
+    private final String ediMessage;
     
     public static HttpEntity parseEntity(HttpEntity entity, boolean isMainBody) throws HttpException {
         Args.notNull(entity, "Entity");
@@ -97,13 +97,18 @@ public abstract class ApplicationEDIEntity extends MimeEntity {
     }
 
 
-    protected ApplicationEDIEntity(String content, ContentType contentType, String contentTransferEncoding, boolean isMainBody) {
-        this.content = Args.notNull(content, "Content");
+    protected ApplicationEDIEntity(String ediMessage, ContentType contentType, String contentTransferEncoding, boolean isMainBody) {
+        this.ediMessage = Args.notNull(ediMessage, "Content");
         setContentType(Args.notNull(contentType, "Content Type").toString());
         setContentTransferEncoding(contentTransferEncoding);
         setMainBody(isMainBody);
     }
     
+    public String getEdiMessage() {
+        return ediMessage;
+    }
+
+
     @Override
     public void writeTo(OutputStream outstream) throws IOException {
         NoCloseOutputStream ncos = new NoCloseOutputStream(outstream);
@@ -119,7 +124,7 @@ public abstract class ApplicationEDIEntity extends MimeEntity {
                 canonicalOutstream.writeln(); // ensure empty line between headers and body; RFC2046 - 5.1.1
             }
             
-            canonicalOutstream.write(content.getBytes(AS2CharSet.US_ASCII), 0, content.length());
+            canonicalOutstream.write(ediMessage.getBytes(AS2CharSet.US_ASCII), 0, ediMessage.length());
         }
     }
 
