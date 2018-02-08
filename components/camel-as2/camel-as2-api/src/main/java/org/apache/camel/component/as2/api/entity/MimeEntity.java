@@ -64,7 +64,7 @@ public abstract class MimeEntity extends AbstractHttpEntity {
     public String getContentTypeValue() {
         Header contentTypeHeader = getContentType();
         if (contentTypeHeader != null) {
-            contentTypeHeader.getValue();
+            return contentTypeHeader.getValue();
         }
         return null;
     }

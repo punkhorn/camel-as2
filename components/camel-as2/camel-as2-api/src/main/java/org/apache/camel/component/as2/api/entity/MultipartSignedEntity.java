@@ -1,8 +1,12 @@
 package org.apache.camel.component.as2.api.entity;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Collection;
 
 import org.apache.camel.component.as2.api.AS2Header;
 import org.apache.camel.component.as2.api.AS2MediaType;
@@ -20,10 +24,16 @@ import org.apache.http.message.BasicLineParser;
 import org.apache.http.message.ParserCursor;
 import org.apache.http.util.Args;
 import org.apache.http.util.CharArrayBuffer;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSProcessable;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.cms.SignerInformation;
+import org.bouncycastle.cms.SignerInformationStore;
+import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
+import org.bouncycastle.util.Store;
 
 public class MultipartSignedEntity extends MultipartMimeEntity {
 
@@ -54,9 +64,23 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
         CMSProcessable signedContent = new CMSProcessableByteArray(ediMessage.getBytes(ediMessageContentType.getCharset()));
         
         byte[] signature = applicationPkcs7SignatureEntity.getSignature();
+        InputStream is = new ByteArrayInputStream(signature);
         
+        CMSSignedData signedData = new CMSSignedData(signedContent, is);
         
-        CMSSignedData signedData = new CMSSignedData(EntityUtils.decode(signature, applicationPkcs7SignatureEntity.getContentTransferEncodingValue()));
+        Store<X509CertificateHolder> store = signedData.getCertificates();
+        SignerInformationStore signers = signedData.getSignerInfos();
+        
+        for(SignerInformation signer: signers.getSigners()) {
+            @SuppressWarnings("unchecked")
+            Collection<X509CertificateHolder> certCollection = store.getMatches(signer.getSID());
+
+            X509CertificateHolder certHolder = certCollection.iterator().next();
+            X509Certificate cert = new JcaX509CertificateConverter().setProvider("BC").getCertificate(certHolder);
+            if (!signer.verify(new JcaSimpleSignerInfoVerifierBuilder().setProvider("BC").build(cert))) {
+                return false;
+            }
+        }
         
         return true;
     }
@@ -70,7 +94,7 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
     }
     
     public ApplicationPkcs7SignatureEntity getSignatureEntity() {
-        if (getPartCount() > 1 && getPart(0) instanceof ApplicationPkcs7SignatureEntity) {
+        if (getPartCount() > 1 && getPart(1) instanceof ApplicationPkcs7SignatureEntity) {
             return (ApplicationPkcs7SignatureEntity)  getPart(1);
         }
         
