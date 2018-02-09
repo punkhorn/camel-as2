@@ -1,6 +1,7 @@
 package org.apache.camel.component.as2.api.entity;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -59,9 +60,9 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
             return false;
         }
         
-        String ediMessage = applicationEDIEntity.getEdiMessage();
-        ContentType ediMessageContentType = ContentType.parse(applicationEDIEntity.getContentTypeValue());
-        CMSProcessable signedContent = new CMSProcessableByteArray(ediMessage.getBytes(ediMessageContentType.getCharset()));
+        ByteArrayOutputStream outstream = new ByteArrayOutputStream();
+        applicationEDIEntity.writeTo(outstream);
+        CMSProcessable signedContent = new CMSProcessableByteArray(outstream.toByteArray());
         
         byte[] signature = applicationPkcs7SignatureEntity.getSignature();
         InputStream is = new ByteArrayInputStream(signature);

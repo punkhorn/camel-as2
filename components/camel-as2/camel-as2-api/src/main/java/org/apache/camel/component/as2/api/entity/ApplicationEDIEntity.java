@@ -98,7 +98,7 @@ public abstract class ApplicationEDIEntity extends MimeEntity {
 
 
     protected ApplicationEDIEntity(String ediMessage, ContentType contentType, String contentTransferEncoding, boolean isMainBody) {
-        this.ediMessage = Args.notNull(ediMessage, "Content");
+        this.ediMessage = Args.notNull(ediMessage, "EDI Message");
         setContentType(Args.notNull(contentType, "Content Type").toString());
         setContentTransferEncoding(contentTransferEncoding);
         setMainBody(isMainBody);
@@ -124,6 +124,7 @@ public abstract class ApplicationEDIEntity extends MimeEntity {
                 canonicalOutstream.writeln(); // ensure empty line between headers and body; RFC2046 - 5.1.1
             }
             
+            // TODO: use CharSet of content type.
             canonicalOutstream.write(ediMessage.getBytes(AS2CharSet.US_ASCII), 0, ediMessage.length());
         }
     }
