@@ -144,7 +144,7 @@ public class EntityUtils {
                 }
                 switch (contentType.getMimeType().toLowerCase()) {
                 case "application/edifact":
-                    entity = ApplicationEDIEntity.parseEntity(entity, true);
+                    entity = EntityParser.parseApplicationEDIEntity(entity, true);
                     ((HttpEntityEnclosingRequest) request).setEntity(entity);
                     break;
                 case "application/edi-x12":
@@ -152,7 +152,7 @@ public class EntityUtils {
                 case "application/consent":
                     break;
                 case "multipart/signed":
-                    entity = MultipartSignedEntity.parseMultipartSignedEntity(entity, true);
+                    entity = EntityParser.parseMultipartSignedEntity(entity, true);
                     ((HttpEntityEnclosingRequest) request).setEntity(entity);
                     break;
                 case "application/pkcs7-mime":
