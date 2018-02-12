@@ -9,7 +9,9 @@ import org.apache.camel.component.as2.api.AS2MediaType;
 import org.apache.camel.component.as2.api.AS2MimeType;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpException;
+import org.apache.http.HttpRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.io.AbstractMessageParser;
 import org.apache.http.impl.io.HttpTransportMetricsImpl;
@@ -20,6 +22,8 @@ import org.apache.http.util.Args;
 import org.apache.http.util.CharArrayBuffer;
 
 public class EntityParser {
+
+    static final String APPLICATION_EDI_CONTENT_TYPE_PREFIX = "application/edi";
 
     public static boolean isBoundaryCloseDelimiter(final CharArrayBuffer buffer, ParserCursor cursor, String boundary) {
         Args.notNull(buffer, "Buffer");
@@ -204,6 +208,8 @@ public class EntityParser {
             while(inBuffer.readLine(lineBuffer) != -1) {
                 if (isBoundaryDelimiter(lineBuffer, null, boundary)) {
                     foundMultipartEndBoundary = true;
+                    // Remove previous line ending: this is associated with boundary
+                    ediMessageContentBuffer.setLength(ediMessageContentBuffer.length() - 2);
                     lineBuffer.clear();
                     break;
                 }
@@ -271,6 +277,8 @@ public class EntityParser {
             while(inBuffer.readLine(lineBuffer) != -1) {
                 if (isBoundaryDelimiter(lineBuffer, null, boundary)) {
                     foundMultipartEndBoundary = true;
+                    // Remove previous line ending: this is associated with boundary
+                    ediMessageContentBuffer.setLength(ediMessageContentBuffer.length() - 2);
                     lineBuffer.clear();
                     break;
                 }
@@ -318,7 +326,7 @@ public class EntityParser {
                 throw new HttpException("Content-Type header is missing");
             }
             ContentType contentType = ContentType.parse(entity.getContentType().getValue());
-            if (!contentType.getMimeType().startsWith(EntityParser.APPLICATION_EDIT_CONTENT_TYPE_PREFIX)) {
+            if (!contentType.getMimeType().startsWith(EntityParser.APPLICATION_EDI_CONTENT_TYPE_PREFIX)) {
                 throw new HttpException("Entity has invalid MIME type '" + contentType.getMimeType() + "'");
             }
     
@@ -360,6 +368,37 @@ public class EntityParser {
         }
     }
 
-    static final String APPLICATION_EDIT_CONTENT_TYPE_PREFIX = "application/edi";
+    public static void parseAS2MessageEntity(HttpRequest request) throws Exception {
+        HttpEntity entity = null;
+        if (request instanceof HttpEntityEnclosingRequest) {
+            entity = ((HttpEntityEnclosingRequest) request).getEntity();
+            if (entity.getContentType() != null) {
+                ContentType contentType;
+                try {
+                    contentType =  ContentType.parse(entity.getContentType().getValue());
+                } catch (Exception e) {
+                    throw new Exception("Failed to get Content Type", e);
+                }
+                switch (contentType.getMimeType().toLowerCase()) {
+                case "application/edifact":
+                case "application/edi-x12":
+                case "application/consent":
+                    entity = parseApplicationEDIEntity(entity, true);
+                    ((HttpEntityEnclosingRequest) request).setEntity(entity);
+                    break;
+                case "multipart/signed":
+                    entity = parseMultipartSignedEntity(entity, true);
+                    ((HttpEntityEnclosingRequest) request).setEntity(entity);
+                    break;
+                case "application/pkcs7-mime":
+                    break;
+                case "message/disposition-notification":
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+    }
 
 }

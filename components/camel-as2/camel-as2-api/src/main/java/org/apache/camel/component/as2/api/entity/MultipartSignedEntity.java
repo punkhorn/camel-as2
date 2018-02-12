@@ -8,11 +8,11 @@ import java.util.Collection;
 
 import org.apache.camel.component.as2.api.AS2Header;
 import org.apache.camel.component.as2.api.AS2SignedDataGenerator;
+import org.apache.http.HttpException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHeader;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSProcessable;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
@@ -37,7 +37,7 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
         this.isMainBody = isMainBody;
     }
     
-    public boolean isValid() throws CMSException, Exception {
+    public boolean isValid()  {
         ApplicationEDIEntity applicationEDIEntity = getSignedDataEntity();
         ApplicationPkcs7SignatureEntity applicationPkcs7SignatureEntity = getSignatureEntity();
         
@@ -45,27 +45,31 @@ public class MultipartSignedEntity extends MultipartMimeEntity {
             return false;
         }
         
-        ByteArrayOutputStream outstream = new ByteArrayOutputStream();
-        applicationEDIEntity.writeTo(outstream);
-        CMSProcessable signedContent = new CMSProcessableByteArray(outstream.toByteArray());
-        
-        byte[] signature = applicationPkcs7SignatureEntity.getSignature();
-        InputStream is = new ByteArrayInputStream(signature);
-        
-        CMSSignedData signedData = new CMSSignedData(signedContent, is);
-        
-        Store<X509CertificateHolder> store = signedData.getCertificates();
-        SignerInformationStore signers = signedData.getSignerInfos();
-        
-        for(SignerInformation signer: signers.getSigners()) {
-            @SuppressWarnings("unchecked")
-            Collection<X509CertificateHolder> certCollection = store.getMatches(signer.getSID());
+        try {
+            ByteArrayOutputStream outstream = new ByteArrayOutputStream();
+            applicationEDIEntity.writeTo(outstream);
+            CMSProcessable signedContent = new CMSProcessableByteArray(outstream.toByteArray());
 
-            X509CertificateHolder certHolder = certCollection.iterator().next();
-            X509Certificate cert = new JcaX509CertificateConverter().setProvider("BC").getCertificate(certHolder);
-            if (!signer.verify(new JcaSimpleSignerInfoVerifierBuilder().setProvider("BC").build(cert))) {
-                return false;
+            byte[] signature = applicationPkcs7SignatureEntity.getSignature();
+            InputStream is = new ByteArrayInputStream(signature);
+
+            CMSSignedData signedData = new CMSSignedData(signedContent, is);
+
+            Store<X509CertificateHolder> store = signedData.getCertificates();
+            SignerInformationStore signers = signedData.getSignerInfos();
+
+            for (SignerInformation signer : signers.getSigners()) {
+                @SuppressWarnings("unchecked")
+                Collection<X509CertificateHolder> certCollection = store.getMatches(signer.getSID());
+
+                X509CertificateHolder certHolder = certCollection.iterator().next();
+                X509Certificate cert = new JcaX509CertificateConverter().setProvider("BC").getCertificate(certHolder);
+                if (!signer.verify(new JcaSimpleSignerInfoVerifierBuilder().setProvider("BC").build(cert))) {
+                    return false;
+                }
             }
+        } catch (Exception e) {
+            return false;
         }
         
         return true;

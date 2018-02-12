@@ -8,9 +8,6 @@ import org.apache.camel.component.as2.api.AS2MediaType;
 import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.codec.binary.Base64OutputStream;
 import org.apache.commons.codec.net.QuotedPrintableCodec;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpEntityEnclosingRequest;
-import org.apache.http.HttpRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.util.Args;
 import org.bouncycastle.util.encoders.Base64;
@@ -129,41 +126,6 @@ public class EntityUtils {
             throw new Exception("Invalid EDI entity mime type: " + ediMessageContentType.getMimeType());
         }
         
-    }
-
-    public static void parseAS2MessageEntity(HttpRequest request) throws Exception {
-        HttpEntity entity = null;
-        if (request instanceof HttpEntityEnclosingRequest) {
-            entity = ((HttpEntityEnclosingRequest) request).getEntity();
-            if (entity.getContentType() != null) {
-                ContentType contentType;
-                try {
-                    contentType =  ContentType.parse(entity.getContentType().getValue());
-                } catch (Exception e) {
-                    throw new Exception("Failed to get Content Type", e);
-                }
-                switch (contentType.getMimeType().toLowerCase()) {
-                case "application/edifact":
-                    entity = EntityParser.parseApplicationEDIEntity(entity, true);
-                    ((HttpEntityEnclosingRequest) request).setEntity(entity);
-                    break;
-                case "application/edi-x12":
-                    break;
-                case "application/consent":
-                    break;
-                case "multipart/signed":
-                    entity = EntityParser.parseMultipartSignedEntity(entity, true);
-                    ((HttpEntityEnclosingRequest) request).setEntity(entity);
-                    break;
-                case "application/pkcs7-mime":
-                    break;
-                case "message/disposition-notification":
-                    break;
-                default:
-                    break;
-                }
-            }
-        }
     }
     
 }
