@@ -22,7 +22,6 @@ import org.apache.camel.component.as2.api.entity.ApplicationPkcs7SignatureEntity
 import org.apache.camel.component.as2.api.entity.MultipartSignedEntity;
 import org.apache.http.ExceptionLogger;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -222,17 +221,7 @@ public class AS2MessageTest {
         AS2ClientConnection clientConnection = new AS2ClientConnection(AS2_VERSION, USER_AGENT, CLIENT_FQDN, TARGET_HOST, TARGET_PORT);
         AS2ClientManager clientManager = new AS2ClientManager(clientConnection);
         
-        // Add Context attributes
-        HttpCoreContext httpContext = HttpCoreContext.create();
-        httpContext.setAttribute(AS2ClientManager.REQUEST_URI, REQUEST_URI);
-        httpContext.setAttribute(AS2ClientManager.SUBJECT, SUBJECT);
-        httpContext.setAttribute(AS2ClientManager.FROM, FROM);
-        httpContext.setAttribute(AS2ClientManager.AS2_FROM, AS2_NAME);
-        httpContext.setAttribute(AS2ClientManager.AS2_TO, AS2_NAME);
-        httpContext.setAttribute(AS2ClientManager.AS2_MESSAGE_STRUCTURE, AS2MessageStructure.PLAIN);
-        httpContext.setAttribute(AS2ClientManager.EDI_MESSAGE_CONTENT_TYPE, ContentType.create(AS2MediaType.APPLICATION_EDIFACT, AS2CharSet.US_ASCII));
-        
-        clientManager.send(EDI_MESSAGE, httpContext);
+        HttpCoreContext httpContext = clientManager.send(EDI_MESSAGE, REQUEST_URI, SUBJECT, FROM, AS2_NAME, AS2_NAME, AS2MessageStructure.PLAIN, ContentType.create(AS2MediaType.APPLICATION_EDIFACT, AS2CharSet.US_ASCII), null, null, null, null);
         
         HttpRequest request = httpContext.getRequest();
         assertEquals("Unexpected method value", METHOD, request.getRequestLine().getMethod());
@@ -265,20 +254,7 @@ public class AS2MessageTest {
         AS2ClientConnection clientConnection = new AS2ClientConnection(AS2_VERSION, USER_AGENT, CLIENT_FQDN, TARGET_HOST, TARGET_PORT);
         AS2ClientManager clientManager = new AS2ClientManager(clientConnection);
         
-        // Add Context attributes
-        HttpCoreContext httpContext = HttpCoreContext.create();
-        httpContext.setAttribute(AS2ClientManager.REQUEST_URI, REQUEST_URI);
-        httpContext.setAttribute(AS2ClientManager.SUBJECT, SUBJECT);
-        httpContext.setAttribute(AS2ClientManager.FROM, FROM);
-        httpContext.setAttribute(AS2ClientManager.AS2_FROM, AS2_NAME);
-        httpContext.setAttribute(AS2ClientManager.AS2_TO, AS2_NAME);
-        httpContext.setAttribute(AS2ClientManager.AS2_MESSAGE_STRUCTURE, AS2MessageStructure.SIGNED);
-        httpContext.setAttribute(AS2ClientManager.EDI_MESSAGE_CONTENT_TYPE, ContentType.create(AS2MediaType.APPLICATION_EDIFACT, AS2CharSet.US_ASCII));
-        httpContext.setAttribute(AS2ClientManager.SIGNING_ALGORITHM_NAME, algorithmName);
-        httpContext.setAttribute(AS2ClientManager.SIGNING_CERTIFICATE_CHAIN, certList.toArray(new Certificate[0]));
-        httpContext.setAttribute(AS2ClientManager.SIGNING_PRIVATE_KEY, signingKP.getPrivate());
-        
-        clientManager.send(EDI_MESSAGE, httpContext);
+         HttpCoreContext httpContext = clientManager.send(EDI_MESSAGE, REQUEST_URI, SUBJECT, FROM, AS2_NAME, AS2_NAME, AS2MessageStructure.SIGNED, ContentType.create(AS2MediaType.APPLICATION_EDIFACT, AS2CharSet.US_ASCII), null, algorithmName, certList.toArray(new Certificate[0]), signingKP.getPrivate());
         
         HttpRequest request = httpContext.getRequest();
         assertEquals("Unexpected method value", METHOD, request.getRequestLine().getMethod());
@@ -324,20 +300,7 @@ public class AS2MessageTest {
         AS2ClientConnection clientConnection = new AS2ClientConnection(AS2_VERSION, USER_AGENT, CLIENT_FQDN, TARGET_HOST, TARGET_PORT);
         AS2ClientManager clientManager = new AS2ClientManager(clientConnection);
         
-        // Add Context attributes
-        HttpCoreContext httpContext = HttpCoreContext.create();
-        httpContext.setAttribute(AS2ClientManager.REQUEST_URI, REQUEST_URI);
-        httpContext.setAttribute(AS2ClientManager.SUBJECT, SUBJECT);
-        httpContext.setAttribute(AS2ClientManager.FROM, FROM);
-        httpContext.setAttribute(AS2ClientManager.AS2_FROM, AS2_NAME);
-        httpContext.setAttribute(AS2ClientManager.AS2_TO, AS2_NAME);
-        httpContext.setAttribute(AS2ClientManager.AS2_MESSAGE_STRUCTURE, AS2MessageStructure.SIGNED);
-        httpContext.setAttribute(AS2ClientManager.EDI_MESSAGE_CONTENT_TYPE, ContentType.create(AS2MediaType.APPLICATION_EDIFACT, AS2CharSet.US_ASCII));
-        httpContext.setAttribute(AS2ClientManager.SIGNING_ALGORITHM_NAME, algorithmName);
-        httpContext.setAttribute(AS2ClientManager.SIGNING_CERTIFICATE_CHAIN, certList.toArray(new Certificate[0]));
-        httpContext.setAttribute(AS2ClientManager.SIGNING_PRIVATE_KEY, signingKP.getPrivate());
-        
-        clientManager.send(EDI_MESSAGE, httpContext);
+        HttpCoreContext httpContext = clientManager.send(EDI_MESSAGE, REQUEST_URI, SUBJECT, FROM, AS2_NAME, AS2_NAME, AS2MessageStructure.SIGNED, ContentType.create(AS2MediaType.APPLICATION_EDIFACT, AS2CharSet.US_ASCII), null, algorithmName, certList.toArray(new Certificate[0]), signingKP.getPrivate());
         
         HttpRequest request = httpContext.getRequest();
         assertTrue("Request does not contain entity", request instanceof BasicHttpEntityEnclosingRequest);

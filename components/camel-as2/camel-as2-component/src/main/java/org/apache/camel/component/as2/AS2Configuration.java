@@ -16,12 +16,17 @@
  */
 package org.apache.camel.component.as2;
 
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
+
 import org.apache.camel.RuntimeCamelException;
+import org.apache.camel.component.as2.api.AS2MessageStructure;
 import org.apache.camel.component.as2.internal.AS2ApiName;
 import org.apache.camel.spi.Metadata;
 import org.apache.camel.spi.UriParam;
 import org.apache.camel.spi.UriParams;
 import org.apache.camel.spi.UriPath;
+import org.apache.http.entity.ContentType;
 
 /**
  * Component configuration for AS2 component.
@@ -57,7 +62,40 @@ public class AS2Configuration {
     
     @UriParam
     private Integer serverPortNumber;
-
+    
+    @UriParam
+    private String requestUri = "/";
+    
+    @UriParam
+    private ContentType ediMessageType;
+    
+    @UriParam
+    private String ediMessageTransferEncoding;
+    
+    @UriParam
+    private AS2MessageStructure as2MessageStructure;
+    
+    @UriParam
+    private String subject;
+    
+    @UriParam
+    private String from;
+    
+    @UriParam
+    private String as2From;
+    
+    @UriParam
+    private String as2To;
+    
+    @UriParam
+    private String signingAlgorithmName;
+    
+    @UriParam
+    private Certificate[] signingCertificateChain;
+    
+    @UriParam
+    private PrivateKey signingPrivateKey;
+    
     /**
      * What kind of operation to perform
      * 
@@ -243,5 +281,94 @@ public class AS2Configuration {
             throw new RuntimeCamelException(String.format("Invalid target port number: %s", targetPortNumber));
         }
     }
+
+    public String getRequestUri() {
+        return requestUri;
+    }
+
+    public void setRequestUri(String requestUri) {
+        this.requestUri = requestUri;
+    }
+
+    public ContentType getEdiMessageType() {
+        return ediMessageType;
+    }
+
+    public void setEdiMessageType(ContentType ediMessageType) {
+        this.ediMessageType = ediMessageType;
+    }
+
+    public AS2MessageStructure getAs2MessageStructure() {
+        return as2MessageStructure;
+    }
+
+    public void setAs2MessageStructure(AS2MessageStructure as2MessageStructure) {
+        this.as2MessageStructure = as2MessageStructure;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
+    public String getFrom() {
+        return from;
+    }
+
+    public void setFrom(String from) {
+        this.from = from;
+    }
+
+    public String getAs2From() {
+        return as2From;
+    }
+
+    public void setAs2From(String as2From) {
+        this.as2From = as2From;
+    }
+
+    public String getAs2To() {
+        return as2To;
+    }
+
+    public void setAs2To(String as2To) {
+        this.as2To = as2To;
+    }
+
+    public String getSigningAlgorithmName() {
+        return signingAlgorithmName;
+    }
+
+    public void setSigningAlgorithmName(String signingAlgorithmName) {
+        this.signingAlgorithmName = signingAlgorithmName;
+    }
+
+    public Certificate[] getSigningCertificateChain() {
+        return signingCertificateChain;
+    }
+
+    public void setSigningCertificateChain(Certificate[] signingCertificateChain) {
+        this.signingCertificateChain = signingCertificateChain;
+    }
+
+    public PrivateKey getSigningPrivateKey() {
+        return signingPrivateKey;
+    }
+
+    public void setSigningPrivateKey(PrivateKey signingPrivateKey) {
+        this.signingPrivateKey = signingPrivateKey;
+    }
+
+    public void setTargetPortNumber(Integer targetPortNumber) {
+        this.targetPortNumber = targetPortNumber;
+    }
+
+    public void setServerPortNumber(Integer serverPortNumber) {
+        this.serverPortNumber = serverPortNumber;
+    }
+    
     
 }

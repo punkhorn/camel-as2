@@ -31,6 +31,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHttpEntityEnclosingRequest;
 import org.apache.http.protocol.HttpCoreContext;
+import org.apache.http.util.Args;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.cms.AttributeTable;
 import org.bouncycastle.asn1.cms.IssuerAndSerialNumber;
@@ -163,24 +164,27 @@ public class AS2ClientManager {
      *            - the subject sent in the interchange request.
      * @throws HttpException
      */
-    public void send(String ediMessage, HttpCoreContext httpContext) throws HttpException {
-        String requestUri = httpContext.getAttribute(REQUEST_URI, String.class);
-        if (requestUri == null) {
-            throw new HttpException("Request URI missing");
-        }
+    public HttpCoreContext send(String ediMessage, String requestUri, String subject, String from, String as2From, String as2To, AS2MessageStructure messageStructure, ContentType ediMessageContentType, String ediMessageTransferEncoding, String signingAlgorithmName, Certificate[] signingCertificateChain, PrivateKey signingPrivateKey) throws HttpException {
         
-        ContentType ediMessageContentType = httpContext.getAttribute(EDI_MESSAGE_CONTENT_TYPE, ContentType.class);
-        if (ediMessageContentType == null) {
-            throw new HttpException("EDI Message Content Type missing");
-        }
+        Args.notNull(ediMessage, "EDI Message");
+        Args.notNull(messageStructure, "AS2 Message Structure");
+        Args.notNull(requestUri, "Request URI");
+        Args.notNull(ediMessageContentType, "EDI Message Content Type");
         
-        String ediMessageTransferEncoding = httpContext.getAttribute(EDI_MESSAGE_TRANSFER_ENCODING, String.class);
+        // Add Context attributes
+        HttpCoreContext httpContext = HttpCoreContext.create();
+        httpContext.setAttribute(AS2ClientManager.REQUEST_URI, requestUri);
+        httpContext.setAttribute(AS2ClientManager.SUBJECT, subject);
+        httpContext.setAttribute(AS2ClientManager.FROM, from);
+        httpContext.setAttribute(AS2ClientManager.AS2_FROM, as2From);
+        httpContext.setAttribute(AS2ClientManager.AS2_TO, as2To);
+        httpContext.setAttribute(AS2ClientManager.AS2_MESSAGE_STRUCTURE, messageStructure);
+        httpContext.setAttribute(AS2ClientManager.EDI_MESSAGE_CONTENT_TYPE, ediMessageContentType);
+        httpContext.setAttribute(AS2ClientManager.EDI_MESSAGE_TRANSFER_ENCODING, ediMessageTransferEncoding);
+        httpContext.setAttribute(AS2ClientManager.SIGNING_ALGORITHM_NAME, signingAlgorithmName);
+        httpContext.setAttribute(AS2ClientManager.SIGNING_CERTIFICATE_CHAIN, signingCertificateChain);
+        httpContext.setAttribute(AS2ClientManager.SIGNING_PRIVATE_KEY, signingPrivateKey);
         
-        AS2MessageStructure messageStructure = httpContext.getAttribute(AS2_MESSAGE_STRUCTURE, AS2MessageStructure.class);
-        if (messageStructure == null) {
-            throw new HttpException("AS2 Message Structure missing");
-        }
-
         BasicHttpEntityEnclosingRequest request = new BasicHttpEntityEnclosingRequest("POST", requestUri);
         httpContext.setAttribute(HTTP_REQUEST, request);
 
@@ -221,6 +225,7 @@ public class AS2ClientManager {
             throw new HttpException("Failed to send http request message", e);
         }
         httpContext.setAttribute(HTTP_RESPONSE, response);
+        return httpContext;
     }
 
     public AS2SignedDataGenerator createSigningGenerator(HttpCoreContext httpContext) throws HttpException {
