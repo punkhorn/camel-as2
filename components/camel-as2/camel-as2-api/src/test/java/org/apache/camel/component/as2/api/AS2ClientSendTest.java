@@ -27,7 +27,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.entity.ContentType;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.protocol.HttpCoreContext;
 import org.apache.http.protocol.HttpRequestHandler;
 import org.apache.http.util.EntityUtils;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -212,17 +211,7 @@ public class AS2ClientSendTest {
         AS2ClientConnection clientConnection = new AS2ClientConnection(AS2_VERSION, USER_AGENT, CLIENT_FQDN, TARGET_HOSTNAME, TARGET_PORT);
         AS2ClientManager clientManager = new AS2ClientManager(clientConnection);
         
-        // Add Context attributes
-        HttpCoreContext httpContext = HttpCoreContext.create();
-        httpContext.setAttribute(AS2ClientManager.REQUEST_URI, REQUEST_URI);
-        httpContext.setAttribute(AS2ClientManager.SUBJECT, SUBJECT);
-        httpContext.setAttribute(AS2ClientManager.FROM, FROM);
-        httpContext.setAttribute(AS2ClientManager.AS2_FROM, AS2_NAME);
-        httpContext.setAttribute(AS2ClientManager.AS2_TO, AS2_NAME);
-        httpContext.setAttribute(AS2ClientManager.AS2_MESSAGE_STRUCTURE, AS2MessageStructure.PLAIN);
-        httpContext.setAttribute(AS2ClientManager.EDI_MESSAGE_CONTENT_TYPE, ContentType.create(AS2MediaType.APPLICATION_EDIFACT, AS2CharSet.US_ASCII));
-        
-        clientManager.send(EDI_MESSAGE, httpContext);
+        clientManager.send(EDI_MESSAGE, REQUEST_URI, SUBJECT, FROM, AS2_NAME, AS2_NAME, AS2MessageStructure.PLAIN, ContentType.create(AS2MediaType.APPLICATION_EDIFACT, AS2CharSet.US_ASCII), null, null, null, null);
     }
     
 }

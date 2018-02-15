@@ -164,10 +164,10 @@ public class AS2ClientManager {
      *            - the subject sent in the interchange request.
      * @throws HttpException
      */
-    public HttpCoreContext send(String ediMessage, String requestUri, String subject, String from, String as2From, String as2To, AS2MessageStructure messageStructure, ContentType ediMessageContentType, String ediMessageTransferEncoding, String signingAlgorithmName, Certificate[] signingCertificateChain, PrivateKey signingPrivateKey) throws HttpException {
+    public HttpCoreContext send(String ediMessage, String requestUri, String subject, String from, String as2From, String as2To, AS2MessageStructure as2MessageStructure, ContentType ediMessageContentType, String ediMessageTransferEncoding, String signingAlgorithmName, Certificate[] signingCertificateChain, PrivateKey signingPrivateKey) throws HttpException {
         
         Args.notNull(ediMessage, "EDI Message");
-        Args.notNull(messageStructure, "AS2 Message Structure");
+        Args.notNull(as2MessageStructure, "AS2 Message Structure");
         Args.notNull(requestUri, "Request URI");
         Args.notNull(ediMessageContentType, "EDI Message Content Type");
         
@@ -178,7 +178,7 @@ public class AS2ClientManager {
         httpContext.setAttribute(AS2ClientManager.FROM, from);
         httpContext.setAttribute(AS2ClientManager.AS2_FROM, as2From);
         httpContext.setAttribute(AS2ClientManager.AS2_TO, as2To);
-        httpContext.setAttribute(AS2ClientManager.AS2_MESSAGE_STRUCTURE, messageStructure);
+        httpContext.setAttribute(AS2ClientManager.AS2_MESSAGE_STRUCTURE, as2MessageStructure);
         httpContext.setAttribute(AS2ClientManager.EDI_MESSAGE_CONTENT_TYPE, ediMessageContentType);
         httpContext.setAttribute(AS2ClientManager.EDI_MESSAGE_TRANSFER_ENCODING, ediMessageTransferEncoding);
         httpContext.setAttribute(AS2ClientManager.SIGNING_ALGORITHM_NAME, signingAlgorithmName);
@@ -195,7 +195,7 @@ public class AS2ClientManager {
         } catch (Exception e) {
             throw new HttpException("Failed to create EDI message entity",e);
         }
-        switch (messageStructure) {
+        switch (as2MessageStructure) {
         case PLAIN:
             applicationEDIEntity.setMainBody(true);
             request.setEntity(applicationEDIEntity);

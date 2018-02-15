@@ -298,6 +298,14 @@ public class AS2Configuration {
         this.ediMessageType = ediMessageType;
     }
 
+    public String getEdiMessageTransferEncoding() {
+        return ediMessageTransferEncoding;
+    }
+
+    public void setEdiMessageTransferEncoding(String ediMessageTransferEncoding) {
+        this.ediMessageTransferEncoding = ediMessageTransferEncoding;
+    }
+
     public AS2MessageStructure getAs2MessageStructure() {
         return as2MessageStructure;
     }
