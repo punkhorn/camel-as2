@@ -8,7 +8,6 @@ import java.util.Collection;
 
 import org.apache.camel.component.as2.api.AS2Header;
 import org.apache.camel.component.as2.api.AS2SignedDataGenerator;
-import org.apache.http.HttpException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.message.BasicHeader;
 import org.bouncycastle.cert.X509CertificateHolder;

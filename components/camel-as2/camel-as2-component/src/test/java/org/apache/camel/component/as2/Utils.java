@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.camel.component.as2.api;
+package org.apache.camel.component.as2;
 
 import java.io.IOException;
 import java.math.BigInteger;
