@@ -147,6 +147,18 @@ public class AS2ClientManager {
      */
     public static final String SIGNING_PRIVATE_KEY = CAMEL_AS2_PREFIX + "signing-private-key";
 
+    /**
+     * The HTTP Context Attribute containing the internet e-mail address of
+     * sending system requesting a message disposition notification. 
+     */
+    public static final String DISPOSITION_NOTIFICATION_TO = CAMEL_AS2_PREFIX + "disposition-notification-to";
+
+    /**
+     * The HTTP Context Attribute containing the list of names of the requested MIC algorithms to be used 
+     * by the receiving system to construct a message disposition notification. 
+     */
+    public static final String SIGNED_RECEIPT_MIC_ALGORITHMS = CAMEL_AS2_PREFIX + "signed-receipt-mic-algorithms";
+
     //
 
     private AS2ClientConnection as2ClientConnection;
@@ -164,7 +176,7 @@ public class AS2ClientManager {
      *            - the subject sent in the interchange request.
      * @throws HttpException
      */
-    public HttpCoreContext send(String ediMessage, String requestUri, String subject, String from, String as2From, String as2To, AS2MessageStructure as2MessageStructure, ContentType ediMessageContentType, String ediMessageTransferEncoding, String signingAlgorithmName, Certificate[] signingCertificateChain, PrivateKey signingPrivateKey) throws HttpException {
+    public HttpCoreContext send(String ediMessage, String requestUri, String subject, String from, String as2From, String as2To, AS2MessageStructure as2MessageStructure, ContentType ediMessageContentType, String ediMessageTransferEncoding, String signingAlgorithmName, Certificate[] signingCertificateChain, PrivateKey signingPrivateKey, String dispositionNotificationTo, String[] signedReceiptMicAlgorithms) throws HttpException {
         
         Args.notNull(ediMessage, "EDI Message");
         Args.notNull(as2MessageStructure, "AS2 Message Structure");
@@ -184,6 +196,8 @@ public class AS2ClientManager {
         httpContext.setAttribute(AS2ClientManager.SIGNING_ALGORITHM_NAME, signingAlgorithmName);
         httpContext.setAttribute(AS2ClientManager.SIGNING_CERTIFICATE_CHAIN, signingCertificateChain);
         httpContext.setAttribute(AS2ClientManager.SIGNING_PRIVATE_KEY, signingPrivateKey);
+        httpContext.setAttribute(AS2ClientManager.DISPOSITION_NOTIFICATION_TO, dispositionNotificationTo);
+        httpContext.setAttribute(AS2ClientManager.SIGNED_RECEIPT_MIC_ALGORITHMS, signedReceiptMicAlgorithms);
         
         BasicHttpEntityEnclosingRequest request = new BasicHttpEntityEnclosingRequest("POST", requestUri);
         httpContext.setAttribute(HTTP_REQUEST, request);

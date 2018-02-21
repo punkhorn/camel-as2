@@ -88,5 +88,13 @@ public class AS2Header {
      * Message Header name for Content Description
      */
     public static final String CONTENT_DESCRIPTION = "Content-Description";
+    /**
+     * Message Header name for Disposition Notification To
+     */
+    public static final String DISPOSITION_NOTIFICATION_TO = "Disposition-Notification-To";
+    /**
+     * Message Header name for Disposition Notification Options
+     */
+    public static final String DISPOSITION_NOTIFICATION_OPTIONS = "Disposition-Notification-Options";
 
 }

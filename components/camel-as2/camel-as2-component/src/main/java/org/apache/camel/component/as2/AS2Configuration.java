@@ -96,6 +96,12 @@ public class AS2Configuration {
     @UriParam
     private PrivateKey signingPrivateKey;
     
+    @UriParam
+    private String dispositionNotificationTo;
+    
+    @UriParam
+    private String[] signedReceiptMicAlgorithms;
+    
     /**
      * What kind of operation to perform
      * 
@@ -376,6 +382,22 @@ public class AS2Configuration {
 
     public void setServerPortNumber(Integer serverPortNumber) {
         this.serverPortNumber = serverPortNumber;
+    }
+
+    public String getDispositionNotificationTo() {
+        return dispositionNotificationTo;
+    }
+
+    public void setDispositionNotificationTo(String dispositionNotificationTo) {
+        this.dispositionNotificationTo = dispositionNotificationTo;
+    }
+
+    public String[] getSignedReceiptMicAlgorithms() {
+        return signedReceiptMicAlgorithms;
+    }
+
+    public void setSignedReceiptMicAlgorithms(String[] signedReceiptMicAlgorithms) {
+        this.signedReceiptMicAlgorithms = signedReceiptMicAlgorithms;
     }
     
     
