@@ -129,6 +129,10 @@ public class EntityParser {
         MultipartSignedEntity multipartSignedEntity = null;
         Header[] headers = null;
     
+        if (entity instanceof MultipartSignedEntity) {
+            return entity;
+        }
+
         try {
             // Determine and validate the Content Type
             Header contentTypeHeader = entity.getContentType();
@@ -317,6 +321,10 @@ public class EntityParser {
         Args.check(entity.isStreaming(), "Entity is not streaming");
         ApplicationEDIEntity applicationEDIEntity = null;
         Header[] headers = null;
+        
+        if (entity instanceof ApplicationEDIEntity) {
+            return entity;
+        }
         
         try {
             
