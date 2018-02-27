@@ -33,6 +33,8 @@ import org.apache.http.util.Args;
 
 public class AS2MessageDispositionNotificationEntity extends MimeEntity {
     
+    private static final String ADDRESS_TYPE_PREFIX = "rfc822;";
+    private static final String MTA_NAME_TYPE_PREFIX = "dns;";
     private static final String REPORTING_UA = "Reporting-UA";
     private static final String MDN_GATEWAY = "MDN-Gateway";
     private static final String FINAL_RECIPIENT = "Final-Recipient";
@@ -41,6 +43,7 @@ public class AS2MessageDispositionNotificationEntity extends MimeEntity {
     private static final String FAILURE = "Failure";
     private static final String ERROR = "Error";
     private static final String WARNING = "Warning";
+    private static final String RECEIVED_CONTENT_MIC = "Received-content-MIC";
 
     String reportingUA;
     String mtnName;
@@ -165,11 +168,11 @@ public class AS2MessageDispositionNotificationEntity extends MimeEntity {
             }
             
             if(mtnName != null) {
-                Header mdnGatewayField = new BasicHeader(MDN_GATEWAY, "dns;" + reportingUA);
+                Header mdnGatewayField = new BasicHeader(MDN_GATEWAY, MTA_NAME_TYPE_PREFIX + reportingUA);
                 canonicalOutstream.writeln(mdnGatewayField.toString());
             }
             
-            Header finalRecipientField = new BasicHeader(FINAL_RECIPIENT, finalRecipient);
+            Header finalRecipientField = new BasicHeader(FINAL_RECIPIENT, ADDRESS_TYPE_PREFIX + finalRecipient);
             canonicalOutstream.writeln(finalRecipientField.toString());
             
             if(originalMessageId != null) {
@@ -181,7 +184,6 @@ public class AS2MessageDispositionNotificationEntity extends MimeEntity {
             if (dispositionModifier != null) {
                 as2Disposition = as2Disposition + "/" + dispositionModifier.toString();
             }
-            
             Header as2DispositionField = new BasicHeader(AS2_DISPOSITION, dispositionMode.toString() + ";" + dispositionType.toString());
             canonicalOutstream.writeln(as2DispositionField.toString());
             
@@ -211,6 +213,11 @@ public class AS2MessageDispositionNotificationEntity extends MimeEntity {
                     Header failureField = new BasicHeader(entry.getKey(), entry.getValue());
                     canonicalOutstream.writeln(failureField.toString());
                 }
+            }
+            
+            if(encodedMessageDigest != null && digestAlgorithmId != null) {
+                Header as2ReceivedContentMicField = new BasicHeader(RECEIVED_CONTENT_MIC, encodedMessageDigest + "'" + digestAlgorithmId);
+                canonicalOutstream.writeln(as2ReceivedContentMicField.toString());
             }
         }            
     }
