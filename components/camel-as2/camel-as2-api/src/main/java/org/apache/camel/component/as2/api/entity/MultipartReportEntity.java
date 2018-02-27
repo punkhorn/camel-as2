@@ -32,7 +32,6 @@ public class MultipartReportEntity extends MultipartMimeEntity {
 
     public MultipartReportEntity(String reportingUA,
                                  String mtnName,
-                                 String originalRecipient,
                                  String finalRecipient,
                                  String originalMessageId,
                                  DispositionMode dispositionMode,
@@ -49,9 +48,9 @@ public class MultipartReportEntity extends MultipartMimeEntity {
                                  String boundary) {
 
         super(ContentType.create(AS2MimeType.MULTIPART_REPORT, charset), isMainBody, boundary);
-        addPart(buildPlainTextReport(reportingUA, mtnName, originalRecipient, finalRecipient, originalMessageId,
+        addPart(buildPlainTextReport(reportingUA, mtnName, finalRecipient, originalMessageId,
                 dispositionMode, dispositionType, dispositionModifier, failureFields, errorFields, warningFields, extensionFields, encodedMessageDigest, digestAlgorithmId));
-        addPart(new AS2MessageDispositionNotificationEntity(reportingUA, mtnName, originalRecipient, finalRecipient,
+        addPart(new AS2MessageDispositionNotificationEntity(reportingUA, mtnName, finalRecipient,
                 originalMessageId, dispositionMode, dispositionType, dispositionModifier, failureFields, errorFields, warningFields, extensionFields, encodedMessageDigest, digestAlgorithmId, charset,
                 isMainBody));
     }
@@ -74,8 +73,7 @@ public class MultipartReportEntity extends MultipartMimeEntity {
 
         super(ContentType.create(AS2MimeType.MULTIPART_REPORT, charset), isMainBody, boundary);
         
-        String originalRecipient, finalRecipient;
-        originalRecipient = finalRecipient = HttpMessageUtils.getHeaderValue(request, AS2Header.AS2_TO);
+        String finalRecipient = HttpMessageUtils.getHeaderValue(request, AS2Header.AS2_TO);
         
         String originalMessageId  = HttpMessageUtils.getHeaderValue(request, AS2Header.MESSAGE_ID);
         if (originalMessageId == null) {
@@ -83,16 +81,15 @@ public class MultipartReportEntity extends MultipartMimeEntity {
         }
 
 
-        addPart(buildPlainTextReport(reportingUA, mtnName, originalRecipient, finalRecipient, originalMessageId,
+        addPart(buildPlainTextReport(reportingUA, mtnName, finalRecipient, originalMessageId,
                 dispositionMode, dispositionType, dispositionModifier, failureFields, errorFields, warningFields, extensionFields, encodedMessageDigest, digestAlgorithmId));
-        addPart(new AS2MessageDispositionNotificationEntity(reportingUA, mtnName, originalRecipient, finalRecipient,
+        addPart(new AS2MessageDispositionNotificationEntity(reportingUA, mtnName, finalRecipient,
                 originalMessageId, dispositionMode, dispositionType, dispositionModifier, failureFields, errorFields, warningFields, extensionFields, encodedMessageDigest, digestAlgorithmId, charset,
                 isMainBody));
     }
 
     protected TextPlainEntity buildPlainTextReport(String reportingUA,
                                                    String mtnName,
-                                                   String originalRecipient,
                                                    String finalRecipient,
                                                    String originalMessageId,
                                                    DispositionMode dispositionMode,

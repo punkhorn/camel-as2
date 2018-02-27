@@ -96,7 +96,6 @@ public abstract class MultipartMimeEntity extends MimeEntity {
             }
             
             // Write out closing boundary delimiter line
-//            canonicalOutstream.writeln(); // ensure boundary occurs at the beginning of a line; RFC2046 - 5.1.1
             canonicalOutstream.writeln(boundary + "--");
             
         }
