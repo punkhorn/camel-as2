@@ -123,7 +123,7 @@ public class EntityParser {
         
     }
 
-    public static HttpEntity parseMultipartSignedEntity(HttpEntity entity, boolean isMainBody) throws Exception{
+    public static HttpEntity parseMultipartSignedEntity(HttpEntity entity, boolean isMainBody) throws HttpException{
         Args.notNull(entity, "Entity");
         Args.check(entity.isStreaming(), "Entity is not streaming");
         MultipartSignedEntity multipartSignedEntity = null;
@@ -376,7 +376,7 @@ public class EntityParser {
         }
     }
 
-    public static void parseAS2MessageEntity(HttpRequest request) throws Exception {
+    public static void parseAS2MessageEntity(HttpRequest request) throws HttpException {
         HttpEntity entity = null;
         if (request instanceof HttpEntityEnclosingRequest) {
             entity = ((HttpEntityEnclosingRequest) request).getEntity();
@@ -385,22 +385,22 @@ public class EntityParser {
                 try {
                     contentType =  ContentType.parse(entity.getContentType().getValue());
                 } catch (Exception e) {
-                    throw new Exception("Failed to get Content Type", e);
+                    throw new HttpException("Failed to get Content Type", e);
                 }
                 switch (contentType.getMimeType().toLowerCase()) {
-                case "application/edifact":
-                case "application/edi-x12":
-                case "application/consent":
+                case AS2MimeType.APPLICATION_EDIFACT:
+                case AS2MimeType.APPLICATION_EDI_X12:
+                case AS2MimeType.APPLICATION_EDI_CONSENT:
                     entity = parseApplicationEDIEntity(entity, true);
                     ((HttpEntityEnclosingRequest) request).setEntity(entity);
                     break;
-                case "multipart/signed":
+                case AS2MimeType.MULTIPART_SIGNED:
                     entity = parseMultipartSignedEntity(entity, true);
                     ((HttpEntityEnclosingRequest) request).setEntity(entity);
                     break;
-                case "application/pkcs7-mime":
+                case AS2MimeType.APPLICATION_PKCS7_MIME:
                     break;
-                case "message/disposition-notification":
+                case AS2MimeType.MESSAGE_DISPOSITION_NOTIFICATION:
                     break;
                 default:
                     break;
