@@ -61,6 +61,10 @@ public class AS2Header {
      */
     public static final String USER_AGENT = HTTP.USER_AGENT;
     /**
+     * Message Header Name for Server Name
+     */
+    public static final String SERVER = HTTP.SERVER_HEADER;
+    /**
      * Message Header Name for Date
      */
     public static final String DATE = HTTP.DATE_HEADER;
