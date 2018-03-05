@@ -1,4 +1,4 @@
-package org.apache.camel.component.as2.api;
+package org.apache.camel.component.as2.api.entity;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;

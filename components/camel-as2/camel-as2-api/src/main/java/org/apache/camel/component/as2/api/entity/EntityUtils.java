@@ -19,8 +19,10 @@ package org.apache.camel.component.as2.api.entity;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.camel.component.as2.api.AS2CharSet;
 import org.apache.camel.component.as2.api.AS2MediaType;
 import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.codec.binary.Base64OutputStream;
@@ -162,14 +164,14 @@ public class EntityUtils {
     public static ApplicationEDIEntity createEDIEntity(String ediMessage, ContentType ediMessageContentType, String contentTransferEncoding, boolean isMainBody) throws Exception {
         Args.notNull(ediMessage, "EDI Message");
         Args.notNull(ediMessageContentType, "EDI Message Content Type");
-        
+        String charset = ediMessageContentType.getCharset() == null ? AS2CharSet.US_ASCII : ediMessageContentType.getCharset().toString();
         switch(ediMessageContentType.getMimeType().toLowerCase()) {
         case AS2MediaType.APPLICATION_EDIFACT:
-            return new ApplicationEDIFACTEntity(ediMessage, ediMessageContentType.getCharset().toString(), contentTransferEncoding, isMainBody);            
+            return new ApplicationEDIFACTEntity(ediMessage, charset, contentTransferEncoding, isMainBody);            
         case AS2MediaType.APPLICATION_EDI_X12:
-            return new ApplicationEDIX12Entity(ediMessage, ediMessageContentType.getCharset().toString(), contentTransferEncoding, isMainBody);            
+            return new ApplicationEDIX12Entity(ediMessage, charset, contentTransferEncoding, isMainBody);            
         case AS2MediaType.APPLICATION_EDI_CONSENT:
-            return new ApplicationEDIConsentEntity(ediMessage, ediMessageContentType.getCharset().toString(), contentTransferEncoding, isMainBody);            
+            return new ApplicationEDIConsentEntity(ediMessage, charset, contentTransferEncoding, isMainBody);            
         default:
             throw new Exception("Invalid EDI entity mime type: " + ediMessageContentType.getMimeType());
         }
