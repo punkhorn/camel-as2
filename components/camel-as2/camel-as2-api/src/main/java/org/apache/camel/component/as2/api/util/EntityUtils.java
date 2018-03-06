@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.camel.component.as2.api.entity;
+package org.apache.camel.component.as2.api.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -24,6 +24,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.camel.component.as2.api.AS2CharSet;
 import org.apache.camel.component.as2.api.AS2MediaType;
+import org.apache.camel.component.as2.api.entity.ApplicationEDIConsentEntity;
+import org.apache.camel.component.as2.api.entity.ApplicationEDIEntity;
+import org.apache.camel.component.as2.api.entity.ApplicationEDIFACTEntity;
+import org.apache.camel.component.as2.api.entity.ApplicationEDIX12Entity;
 import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.codec.binary.Base64OutputStream;
 import org.apache.commons.codec.net.QuotedPrintableCodec;

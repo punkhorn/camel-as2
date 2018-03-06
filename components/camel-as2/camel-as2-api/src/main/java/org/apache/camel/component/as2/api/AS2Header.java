@@ -97,6 +97,14 @@ public class AS2Header {
      */
     public static final String DISPOSITION_NOTIFICATION_TO = "Disposition-Notification-To";
     /**
+     * Message Header name for Receipt Delivery Option
+     */
+    public static final String RECEIPT_DELIVERY_OPTION = "Receipt-Delivery-Option";
+    /**
+     * Message Header name for Receipt Address
+     */
+    public static final String RECEIPT_ADDRESS = "Receipt-Address";
+    /**
      * Message Header name for Disposition Notification Options
      */
     public static final String DISPOSITION_NOTIFICATION_OPTIONS = "Disposition-Notification-Options";
