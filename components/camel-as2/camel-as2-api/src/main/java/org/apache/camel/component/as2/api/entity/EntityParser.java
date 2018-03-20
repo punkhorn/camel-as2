@@ -319,7 +319,6 @@ public class EntityParser {
 
     public static HttpEntity parseApplicationEDIEntity(HttpEntity entity, boolean isMainBody) throws HttpException {
         Args.notNull(entity, "Entity");
-        Args.check(entity.isStreaming(), "Entity is not streaming");
         ApplicationEDIEntity applicationEDIEntity = null;
         Header[] headers = null;
         
@@ -327,6 +326,8 @@ public class EntityParser {
             return entity;
         }
         
+        Args.check(entity.isStreaming(), "Entity is not streaming");
+
         try {
             
             // Determine and validate the Content Type

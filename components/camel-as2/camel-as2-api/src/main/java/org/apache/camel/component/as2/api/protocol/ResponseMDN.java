@@ -10,10 +10,11 @@ import org.apache.camel.component.as2.api.InvalidAS2NameException;
 import org.apache.camel.component.as2.api.Util;
 import org.apache.camel.component.as2.api.entity.AS2DispositionType;
 import org.apache.camel.component.as2.api.entity.DispositionMode;
+import org.apache.camel.component.as2.api.entity.DispositionNotificationMultipartReportEntity;
 import org.apache.camel.component.as2.api.entity.DispositionNotificationOptions;
 import org.apache.camel.component.as2.api.entity.DispositionNotificationOptionsParser;
-import org.apache.camel.component.as2.api.entity.MultipartReportEntity;
 import org.apache.camel.component.as2.api.util.EntityUtils;
+import org.apache.camel.component.as2.api.util.HttpMessageUtils;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
@@ -36,6 +37,8 @@ public class ResponseMDN implements HttpResponseInterceptor {
 
         HttpCoreContext coreContext = HttpCoreContext.adapt(context);
         
+        
+        
         HttpEntityEnclosingRequest request = coreContext.getAttribute(HttpCoreContext.HTTP_REQUEST, HttpEntityEnclosingRequest.class);
 
         /* MIME header */
@@ -56,7 +59,7 @@ public class ResponseMDN implements HttpResponseInterceptor {
         response.addHeader(AS2Header.FROM, from);
 
         /* AS2-From header */
-        String as2From = coreContext.getAttribute(AS2ServerManager.AS2_FROM, String.class);
+        String as2From = HttpMessageUtils.getHeaderValue(request, AS2Header.AS2_TO);
         try {
             Util.validateAS2Name(as2From);
         } catch (InvalidAS2NameException e) {
@@ -65,7 +68,7 @@ public class ResponseMDN implements HttpResponseInterceptor {
         response.addHeader(AS2Header.AS2_FROM, as2From);
 
         /* AS2-To header */
-        String as2To = coreContext.getAttribute(AS2ServerManager.AS2_TO, String.class);
+        String as2To = HttpMessageUtils.getHeaderValue(request, AS2Header.AS2_FROM);
         try {
             Util.validateAS2Name(as2To);
         } catch (InvalidAS2NameException e) {
@@ -77,23 +80,24 @@ public class ResponseMDN implements HttpResponseInterceptor {
         // SHOULD be set to aid in message reconciliation
         response.addHeader(AS2Header.MESSAGE_ID, Util.createMessageId(serverFQDN));
         
-        if (coreContext.getAttribute(AS2ServerManager.MESSAGE_DISPOSITION_NOTIFICATION, String.class) == null) {
+        if (HttpMessageUtils.getHeaderValue(request, AS2Header.DISPOSITION_NOTIFICATION_TO) != null) {
+            // Return a Message Disposition Notification Receipt in response body 
             
-            MultipartReportEntity multipartReportEntity = new MultipartReportEntity(request, response, DispositionMode.AUTOMATIC_ACTION_MDN_SENT_AUTOMATICALLY, AS2DispositionType.PROCESSED, null, null, null, null, null, AS2CharSet.US_ASCII, true, EntityUtils.createBoundaryValue());
+            DispositionNotificationMultipartReportEntity multipartReportEntity = new DispositionNotificationMultipartReportEntity(request, response, DispositionMode.AUTOMATIC_ACTION_MDN_SENT_AUTOMATICALLY, AS2DispositionType.PROCESSED, null, null, null, null, null, AS2CharSet.US_ASCII, true, EntityUtils.createBoundaryValue());
 
-            DispositionNotificationOptions dispositionNotificationOptions = DispositionNotificationOptionsParser.parseDispositionNotificationOptions(coreContext.getAttribute(AS2ServerManager.MESSAGE_DISPOSITION_OPTIONS, String.class), null);
+            DispositionNotificationOptions dispositionNotificationOptions = DispositionNotificationOptionsParser.parseDispositionNotificationOptions(HttpMessageUtils.getHeaderValue(request, AS2Header.DISPOSITION_NOTIFICATION_OPTIONS), null);
             
-            String receiptAddress = coreContext.getAttribute(AS2ServerManager.RECEIPT_ADDRESS, String.class);
+            String receiptAddress = HttpMessageUtils.getHeaderValue(request, AS2Header.RECEIPT_DELIVERY_OPTION);
             if (receiptAddress != null) { 
                 // Asynchronous Delivery
                 // TODO Implement
             } else { 
                 // Synchronous Delivery
                 if (dispositionNotificationOptions.getSignedReceiptProtocol() == null) {
-                    // Signed MDN
+                    // Create signed receipt
                     // TODO Implenent
                 } else {
-                    // Unsigned MDN
+                 // Create unsigned receipt
                     response.setEntity(multipartReportEntity);
                 }
             }

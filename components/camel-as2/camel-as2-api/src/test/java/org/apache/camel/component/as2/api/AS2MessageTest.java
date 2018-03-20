@@ -20,6 +20,7 @@ import org.apache.camel.component.as2.api.entity.ApplicationEDIEntity;
 import org.apache.camel.component.as2.api.entity.ApplicationEDIFACTEntity;
 import org.apache.camel.component.as2.api.entity.ApplicationPkcs7SignatureEntity;
 import org.apache.camel.component.as2.api.entity.MultipartSignedEntity;
+import org.apache.camel.component.as2.api.protocol.ResponseMDN;
 import org.apache.http.ExceptionLogger;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -72,7 +73,8 @@ public class AS2MessageTest {
     private static final String AS2_NAME = "878051556";
     private static final String SUBJECT = "Test Case";
     private static final String FROM = "mrAS@example.org";
-    private static final String CLIENT_FQDN = "example.org";
+    private static final String CLIENT_FQDN = "client.example.org";
+    private static final String SERVER_FQDN = "server.example.org";
     private static final String DISPOSITION_NOTIFICATION_TO = "mrAS@example.org";
     private static final String[] SIGNED_RECEIPT_MIC_ALGORITHMS = new String[] { "sha1", "md5" };
     
@@ -148,6 +150,7 @@ public class AS2MessageTest {
     public static void setUpOne() throws Exception {
         // Setup Test Server
         HttpProcessor httpProcessor = HttpProcessorBuilder.create()
+                .add(new ResponseMDN(AS2_VERSION, SERVER_FQDN))
                 .add(new ResponseDate())
                 .add(new ResponseServer("MyServer-HTTP/1.1"))
                 .add(new ResponseContent())
@@ -172,7 +175,9 @@ public class AS2MessageTest {
                             throws HttpException, IOException {
                         try {
                             org.apache.camel.component.as2.api.entity.EntityParser.parseAS2MessageEntity(request);
-                        } catch (Exception e) {
+                            context.setAttribute(SUBJECT, SUBJECT);
+                            context.setAttribute(FROM, AS2_NAME);
+                 } catch (Exception e) {
                             throw new HttpException("Failed to parse AS2 Message Entity", e);
                         }
                         if (request instanceof HttpEntityEnclosingRequest && ((HttpEntityEnclosingRequest)request).getEntity() instanceof MultipartSignedEntity) {
@@ -324,7 +329,12 @@ public class AS2MessageTest {
     
     @Test
     public void mdnMessageTest() throws Exception {
+        AS2ClientConnection clientConnection = new AS2ClientConnection(AS2_VERSION, USER_AGENT, CLIENT_FQDN, TARGET_HOST, TARGET_PORT);
+        AS2ClientManager clientManager = new AS2ClientManager(clientConnection);
         
+        HttpCoreContext httpContext = clientManager.send(EDI_MESSAGE, REQUEST_URI, SUBJECT, FROM, AS2_NAME, AS2_NAME, AS2MessageStructure.PLAIN, ContentType.create(AS2MediaType.APPLICATION_EDIFACT, AS2CharSet.US_ASCII), null, null, null, null, DISPOSITION_NOTIFICATION_TO, SIGNED_RECEIPT_MIC_ALGORITHMS);
+        
+        HttpResponse response = httpContext.getResponse();
     }
         
 }
