@@ -30,6 +30,10 @@ public class MultipartReportEntity extends MultipartMimeEntity {
         super(ContentType.create(AS2MimeType.MULTIPART_REPORT, charset), isMainBody, boundary);
 
     }
+    
+    protected MultipartReportEntity() {
+        
+    }
 
 
 }

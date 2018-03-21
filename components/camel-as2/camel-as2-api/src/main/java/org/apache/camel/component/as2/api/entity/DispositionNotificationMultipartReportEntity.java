@@ -41,8 +41,8 @@ public class DispositionNotificationMultipartReportEntity extends MultipartRepor
                                                         String[] warningFields,
                                                         Map<String, String> extensionFields,
                                                         String charset,
-                                                        boolean isMainBody,
-                                                        String boundary)
+                                                        String boundary,
+                                                        boolean isMainBody)
             throws HttpException {
         super(charset, isMainBody, boundary);
         
@@ -53,6 +53,11 @@ public class DispositionNotificationMultipartReportEntity extends MultipartRepor
                 dispositionModifier, failureFields, errorFields, warningFields, extensionFields));
         addPart(new AS2MessageDispositionNotificationEntity(request, response, dispositionMode, dispositionType,
                 dispositionModifier, failureFields, errorFields, warningFields, extensionFields, charset, isMainBody));
+    }
+    
+    protected DispositionNotificationMultipartReportEntity(String boundary, boolean isMainBody) {
+        this.boundary = boundary;
+        this.isMainBody = isMainBody;
     }
 
     protected TextPlainEntity buildPlainTextReport(HttpEntityEnclosingRequest request,
