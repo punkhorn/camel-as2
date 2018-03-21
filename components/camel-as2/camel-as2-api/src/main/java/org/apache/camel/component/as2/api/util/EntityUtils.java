@@ -19,7 +19,6 @@ package org.apache.camel.component.as2.api.util;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.camel.component.as2.api.AS2CharSet;
