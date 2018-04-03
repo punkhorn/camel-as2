@@ -21,6 +21,10 @@ public class TextPlainEntity extends MimeEntity {
         setContentTransferEncoding(contentTransferEncoding);
         setMainBody(isMainBody);
     }
+    
+    public String getText() {
+        return content;
+    }
 
     @Override
     public void writeTo(OutputStream outstream) throws IOException {
