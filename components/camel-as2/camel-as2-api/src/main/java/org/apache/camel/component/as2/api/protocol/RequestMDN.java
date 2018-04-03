@@ -27,17 +27,18 @@ public class RequestMDN implements HttpRequestInterceptor {
             
             String[] micAlgorithms = coreContext.getAttribute(AS2ClientManager.SIGNED_RECEIPT_MIC_ALGORITHMS, String[].class);
             if (micAlgorithms == null) {
-                throw new HttpException("Must specify a list of preferred MIC algorithms when requesting a MDN");
+                // requesting unsigned receipt: indicate by not setting Disposition-Notification-Options header
+            } else {
+
+                CharArrayBuffer options = new CharArrayBuffer(
+                        SIGNED_RECEIPT_PREFIX.length() + 5 * micAlgorithms.length);
+                options.append(SIGNED_RECEIPT_PREFIX);
+                for (String micAlgorithm : micAlgorithms) {
+                    options.append("," + micAlgorithm);
+                }
+
+                request.addHeader(AS2Header.DISPOSITION_NOTIFICATION_OPTIONS, options.toString());
             }
-            
-            CharArrayBuffer options = new CharArrayBuffer(SIGNED_RECEIPT_PREFIX.length() + 5 * micAlgorithms.length);
-            options.append(SIGNED_RECEIPT_PREFIX);
-            for(String micAlgorithm: micAlgorithms) {
-                options.append("," + micAlgorithm);
-            }
-            
-            request.addHeader(AS2Header.DISPOSITION_NOTIFICATION_OPTIONS, options.toString());
-            
         }
 
     }

@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.apache.camel.component.as2.api.AS2CharSet;
 import org.apache.camel.component.as2.api.AS2Constants;
 import org.apache.camel.component.as2.api.AS2Header;
+import org.apache.camel.component.as2.api.AS2MimeType;
 import org.apache.camel.component.as2.api.AS2ServerManager;
 import org.apache.camel.component.as2.api.InvalidAS2NameException;
 import org.apache.camel.component.as2.api.Util;
@@ -37,8 +38,6 @@ public class ResponseMDN implements HttpResponseInterceptor {
 
         HttpCoreContext coreContext = HttpCoreContext.adapt(context);
         
-        
-        
         HttpEntityEnclosingRequest request = coreContext.getAttribute(HttpCoreContext.HTTP_REQUEST, HttpEntityEnclosingRequest.class);
 
         /* MIME header */
@@ -47,9 +46,6 @@ public class ResponseMDN implements HttpResponseInterceptor {
         /* AS2-Version header */
         response.addHeader(AS2Header.AS2_VERSION, as2Version);
 
-        /* MIME header */
-        response.addHeader(AS2Header.MIME_VERSION, AS2Constants.MIME_VERSION);
-        
         /* Subject header */
         String subject = coreContext.getAttribute(AS2ServerManager.SUBJECT, String.class);
         response.addHeader(AS2Header.SUBJECT, subject);
@@ -93,11 +89,12 @@ public class ResponseMDN implements HttpResponseInterceptor {
                 // TODO Implement
             } else { 
                 // Synchronous Delivery
-                if (dispositionNotificationOptions.getSignedReceiptProtocol() == null) {
+                if (dispositionNotificationOptions.getSignedReceiptProtocol() != null) {
                     // Create signed receipt
                     // TODO Implenent
                 } else {
-                 // Create unsigned receipt
+                    // Create unsigned receipt
+                    response.setHeader(AS2Header.CONTENT_TYPE, AS2MimeType.MULTIPART_REPORT);
                     response.setEntity(multipartReportEntity);
                 }
             }

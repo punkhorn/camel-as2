@@ -146,7 +146,7 @@ public class EntityParserTest {
     }
     
     @Test
-    public void parseMessageDispositionNotificationReportTest() throws Exception {
+    public void parseMessageDispositionNotificationReportMessageTest() throws Exception {
         HttpResponse response = new BasicHttpResponse(HttpVersion.HTTP_1_1, HttpStatus.SC_OK, EnglishReasonPhraseCatalog.INSTANCE.getReason(HttpStatus.SC_OK, null));
         HttpMessageUtils.setHeaderValue(response, AS2Header.CONTENT_TRANSFER_ENCODING, DISPOSITION_NOTIFICATION_CONTENT_TRANSFER_ENCODING);
         HttpMessageUtils.setHeaderValue(response, AS2Header.REPORT_TYPE, REPORT_TYPE_HEADER_VALUE);
@@ -158,6 +158,8 @@ public class EntityParserTest {
         EntityParser.setMessageEntity(response, entity);
         
         HttpEntity parsedEntity = EntityParser.parseMessageDispositionNotificationReportEntity(response, entity, true);
+        assertNotNull("Unexpected Null message disposition notification report entity", parsedEntity);
+        assertTrue("Unexpected type for message disposition notification report entity", parsedEntity instanceof DispositionNotificationMultipartReportEntity);
     }
     
     @Test
