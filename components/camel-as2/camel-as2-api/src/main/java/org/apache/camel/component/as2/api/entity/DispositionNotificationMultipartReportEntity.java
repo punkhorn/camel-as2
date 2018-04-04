@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.apache.camel.component.as2.api.AS2CharSet;
 import org.apache.camel.component.as2.api.AS2Header;
+import org.apache.camel.component.as2.api.AS2MimeType;
 import org.apache.camel.component.as2.api.AS2TransferEncoding;
 import org.apache.camel.component.as2.api.util.HttpMessageUtils;
 import org.apache.http.Header;
@@ -45,14 +46,14 @@ public class DispositionNotificationMultipartReportEntity extends MultipartRepor
                                                         boolean isMainBody)
             throws HttpException {
         super(charset, isMainBody, boundary);
-        
+        this.contentType = new BasicHeader(AS2Header.CONTENT_TYPE, AS2MimeType.MULTIPART_REPORT);
         Header reportType = new BasicHeader(AS2Header.REPORT_TYPE, getReportTypeValue(boundary));
         addHeader(reportType);
         
         addPart(buildPlainTextReport(request, response, dispositionMode, dispositionType,
                 dispositionModifier, failureFields, errorFields, warningFields, extensionFields));
         addPart(new AS2MessageDispositionNotificationEntity(request, response, dispositionMode, dispositionType,
-                dispositionModifier, failureFields, errorFields, warningFields, extensionFields, charset, isMainBody));
+                dispositionModifier, failureFields, errorFields, warningFields, extensionFields, charset, false));
     }
     
     protected DispositionNotificationMultipartReportEntity(String boundary, boolean isMainBody) {
