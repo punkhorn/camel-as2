@@ -19,6 +19,8 @@ package org.apache.camel.component.as2.api.util;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.camel.component.as2.api.AS2CharSet;
@@ -224,6 +226,19 @@ public class EntityUtils {
         }
         long contentLength = entity.getContentLength();
         message.setHeader(AS2Header.CONTENT_LENGTH, Long.toString(contentLength));
+    }
+
+    public static byte[] decodeTransferEncodingOfBodyPartContent(String bodyPartContent,
+                                                                 ContentType contentType,
+                                                                 String bodyPartTransferEncoding)
+            throws Exception {
+        Args.notNull(bodyPartContent, "bodyPartContent");
+        Charset contentCharset = contentType.getCharset();
+        if (contentCharset == null) {
+            contentCharset = StandardCharsets.US_ASCII;
+        }
+        return decode(bodyPartContent.getBytes(contentCharset), bodyPartTransferEncoding);
+    
     }
 
 
