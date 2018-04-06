@@ -1,3 +1,19 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.camel.component.as2.api.entity;
 
 import java.io.IOException;
@@ -9,20 +25,17 @@ import java.util.List;
 
 import org.apache.camel.component.as2.api.AS2CharSet;
 import org.apache.camel.component.as2.api.AS2Header;
-import org.apache.camel.component.as2.api.AS2MediaType;
 import org.apache.camel.component.as2.api.AS2MimeType;
 import org.apache.camel.component.as2.api.io.AS2SessionInputBuffer;
+import org.apache.camel.component.as2.api.util.AS2HeaderUtils;
+import org.apache.camel.component.as2.api.util.ContentTypeUtils;
 import org.apache.camel.component.as2.api.util.DispositionNotificationContentUtils;
 import org.apache.camel.component.as2.api.util.EntityUtils;
 import org.apache.camel.component.as2.api.util.HttpMessageUtils;
 import org.apache.http.Header;
-import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpException;
 import org.apache.http.HttpMessage;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
 import org.apache.http.ParseException;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.io.AbstractMessageParser;
@@ -95,28 +108,6 @@ public class EntityParser {
         }
 
         return true;
-    }
-
-    public static boolean isEDIMessageContentType(ContentType ediMessageContentType) {
-        switch (ediMessageContentType.getMimeType().toLowerCase()) {
-        case AS2MediaType.APPLICATION_EDIFACT:
-            return true;
-        case AS2MediaType.APPLICATION_EDI_X12:
-            return true;
-        case AS2MediaType.APPLICATION_EDI_CONSENT:
-            return true;
-        default:
-            return false;
-        }
-    }
-
-    public static boolean isPkcs7SignatureType(ContentType pcks7SignatureType) {
-        switch (pcks7SignatureType.getMimeType().toLowerCase()) {
-        case AS2MimeType.APPLICATION_PKCS7_SIGNATURE:
-            return true;
-        default:
-            return false;
-        }
     }
 
     public static void skipPreambleAndStartBoundary(AS2SessionInputBuffer inbuffer, String boundary)
@@ -239,13 +230,13 @@ public class EntityParser {
             if (ediMessageContentType == null) {
                 throw new HttpException("Failed to find Content-Type header in EDI message body part");
             }
-            if (!isEDIMessageContentType(ediMessageContentType)) {
+            if (!ContentTypeUtils.isEDIMessageContentType(ediMessageContentType)) {
                 throw new HttpException(
                         "Invalid content type '" + ediMessageContentType.getMimeType() + "' for EDI message body part");
             }
 
             // - Read EDI Message Body Part Content
-            String ediMessageBodyPartContent = parseBodyPartContent(inBuffer, boundary);
+            String ediMessageBodyPartContent = HttpMessageUtils.parseBodyPartContent(inBuffer, boundary);
 
             // Decode Content
             byte[] bytes = decodeTransferEncodingOfBodyPartContent(ediMessageBodyPartContent, ediMessageContentType,
@@ -286,13 +277,13 @@ public class EntityParser {
             if (signatureContentType == null) {
                 throw new HttpException("Failed to find Content-Type header in signature body part");
             }
-            if (!isPkcs7SignatureType(signatureContentType)) {
+            if (!ContentTypeUtils.isPkcs7SignatureType(signatureContentType)) {
                 throw new HttpException(
                         "Invalid content type '" + ediMessageContentType.getMimeType() + "' for signature body part");
             }
 
             // Read Signature Body Part Content
-            String signatureBodyPartContent = parseBodyPartContent(inBuffer, boundary);
+            String signatureBodyPartContent = HttpMessageUtils.parseBodyPartContent(inBuffer, boundary);
 
             // Decode content
             byte[] signature = decodeTransferEncodingOfBodyPartContent(signatureBodyPartContent, signatureContentType,
@@ -421,9 +412,9 @@ public class EntityParser {
             // Get Boundary Value
             String boundary = null;
             if (isMainBody) {
-                boundary = getBoundaryParameterValue(message, AS2Header.REPORT_TYPE);
+                boundary = HttpMessageUtils.getBoundaryParameterValue(message, AS2Header.REPORT_TYPE);
             } else if (headers != null) {
-                boundary = getBoundaryParameterValue(headers, AS2Header.REPORT_TYPE);
+                boundary = AS2HeaderUtils.getBoundaryParameterValue(headers, AS2Header.REPORT_TYPE);
             }
             if (boundary == null) {
                 throw new HttpException("Failed to retrive boundary value");
@@ -446,8 +437,8 @@ public class EntityParser {
 
     public static void parseAS2MessageEntity(HttpMessage message) throws HttpException {
         HttpEntity entity = null;
-        if (hasEntity(message)) {
-            entity = getMessageEntity(message);
+        if (EntityUtils.hasEntity(message)) {
+            entity = EntityUtils.getMessageEntity(message);
             if (entity != null && entity.getContentType() != null) {
                 ContentType contentType;
                 try {
@@ -460,115 +451,22 @@ public class EntityParser {
                 case AS2MimeType.APPLICATION_EDI_X12:
                 case AS2MimeType.APPLICATION_EDI_CONSENT:
                     entity = parseApplicationEDIEntity(message, entity, true);
-                    setMessageEntity(message, entity);
+                    EntityUtils.setMessageEntity(message, entity);
                     break;
                 case AS2MimeType.MULTIPART_SIGNED:
                     entity = parseMultipartSignedEntity(message, entity, true);
-                    setMessageEntity(message, entity);
+                    EntityUtils.setMessageEntity(message, entity);
                     break;
                 case AS2MimeType.APPLICATION_PKCS7_MIME:
                     break;
                 case AS2MimeType.MULTIPART_REPORT:
                     entity = parseMessageDispositionNotificationReportEntity(message, entity, true);
-                    setMessageEntity(message, entity);
+                    EntityUtils.setMessageEntity(message, entity);
                     break;
                 default:
                     break;
                 }
             }
-        }
-    }
-
-    public static boolean hasEntity(HttpMessage message) {
-        boolean hasEntity = false;
-        if (message instanceof HttpEntityEnclosingRequest) {
-            hasEntity = ((HttpEntityEnclosingRequest) message).getEntity() != null;
-        } else if (message instanceof HttpResponse) {
-            hasEntity = ((HttpResponse) message).getEntity() != null;
-        }
-        return hasEntity;
-    }
-
-    public static HttpEntity getMessageEntity(HttpMessage message) {
-        if (message instanceof HttpEntityEnclosingRequest) {
-            return ((HttpEntityEnclosingRequest) message).getEntity();
-        } else if (message instanceof HttpResponse) {
-            return ((HttpResponse) message).getEntity();
-        }
-        return null;
-    }
-
-    public static void setMessageEntity(HttpMessage message, HttpEntity entity) {
-        if (message instanceof HttpEntityEnclosingRequest) {
-            ((HttpEntityEnclosingRequest) message).setEntity(entity);
-        } else if (message instanceof HttpResponse) {
-            ((HttpResponse) message).setEntity(entity);
-        }
-        long contentLength = entity.getContentLength();
-        message.setHeader(AS2Header.CONTENT_LENGTH, Long.toString(contentLength));
-    }
-
-    public static String getBoundaryParameterValue(HttpMessage message, String headerName) {
-        Args.notNull(message, "message");
-        Args.notNull(headerName, "headerName");
-        Header header = message.getFirstHeader(headerName);
-        if (header == null) {
-            return null;
-        }
-        for (HeaderElement headerElement : header.getElements()) {
-            for (NameValuePair nameValuePair : headerElement.getParameters()) {
-                if (nameValuePair.getName().equalsIgnoreCase("boundary")) {
-                    return nameValuePair.getValue();
-                }
-            }
-        }
-        return null;
-    }
-
-    public static String getBoundaryParameterValue(Header[] headers, String headerName) {
-        Args.notNull(headers, "headers");
-        Args.notNull(headerName, "headerName");
-        for (Header header : headers) {
-            if (header.getName().equalsIgnoreCase(headerName)) {
-                for (HeaderElement headerElement : header.getElements()) {
-                    for (NameValuePair nameValuePair : headerElement.getParameters()) {
-                        if (nameValuePair.getName().equalsIgnoreCase("boundary")) {
-                            return nameValuePair.getValue();
-                        }
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    public static String parseBodyPartContent(SessionInputBuffer inBuffer, String boundary) throws HttpException {
-        try {
-            CharArrayBuffer bodyPartContentBuffer = new CharArrayBuffer(1024);
-            CharArrayBuffer lineBuffer = new CharArrayBuffer(1024);
-            boolean foundMultipartEndBoundary = false;
-            while (inBuffer.readLine(lineBuffer) != -1) {
-                if (isBoundaryDelimiter(lineBuffer, null, boundary)) {
-                    foundMultipartEndBoundary = true;
-                    // Remove previous line ending: this is associated with
-                    // boundary
-                    bodyPartContentBuffer.setLength(bodyPartContentBuffer.length() - 2);
-                    lineBuffer.clear();
-                    break;
-                }
-                lineBuffer.append("\r\n"); // add line delimiter
-                bodyPartContentBuffer.append(lineBuffer);
-                lineBuffer.clear();
-            }
-            if (!foundMultipartEndBoundary) {
-                throw new HttpException("Failed to find end boundary delimiter for body part");
-            }
-
-            return bodyPartContentBuffer.toString();
-        } catch (HttpException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new HttpException("Failed to parse body part content", e);
         }
     }
 

@@ -11,6 +11,7 @@ import java.io.InputStream;
 import org.apache.camel.component.as2.api.AS2Header;
 import org.apache.camel.component.as2.api.AS2MimeType;
 import org.apache.camel.component.as2.api.io.AS2SessionInputBuffer;
+import org.apache.camel.component.as2.api.util.EntityUtils;
 import org.apache.camel.component.as2.api.util.HttpMessageUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -155,7 +156,7 @@ public class EntityParserTest {
         entity.setContentType(AS2MimeType.MULTIPART_REPORT);
         InputStream is = new ByteArrayInputStream(DISPOSITION_NOTIFICATION_REPORT_CONTENT.getBytes(DISPOSITION_NOTIFICATION_REPORT_CONTENT_CHARSET_NAME));
         entity.setContent(is);
-        EntityParser.setMessageEntity(response, entity);
+        EntityUtils.setMessageEntity(response, entity);
         
         HttpEntity parsedEntity = EntityParser.parseMessageDispositionNotificationReportEntity(response, entity, true);
         assertNotNull("Unexpected Null message disposition notification report entity", parsedEntity);

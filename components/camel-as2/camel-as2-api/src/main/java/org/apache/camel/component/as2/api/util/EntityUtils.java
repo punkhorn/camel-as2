@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.camel.component.as2.api.AS2CharSet;
+import org.apache.camel.component.as2.api.AS2Header;
 import org.apache.camel.component.as2.api.AS2MediaType;
 import org.apache.camel.component.as2.api.entity.ApplicationEDIConsentEntity;
 import org.apache.camel.component.as2.api.entity.ApplicationEDIEntity;
@@ -31,6 +32,9 @@ import org.apache.commons.codec.binary.Base64InputStream;
 import org.apache.commons.codec.binary.Base64OutputStream;
 import org.apache.commons.codec.net.QuotedPrintableCodec;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpEntityEnclosingRequest;
+import org.apache.http.HttpMessage;
+import org.apache.http.HttpResponse;
 import org.apache.http.entity.ContentType;
 import org.apache.http.util.Args;
 import org.bouncycastle.util.encoders.Base64;
@@ -191,6 +195,35 @@ public class EntityUtils {
             LOG.debug("failed to get content", e);
             return null;
         }
+    }
+
+    public static boolean hasEntity(HttpMessage message) {
+        boolean hasEntity = false;
+        if (message instanceof HttpEntityEnclosingRequest) {
+            hasEntity = ((HttpEntityEnclosingRequest) message).getEntity() != null;
+        } else if (message instanceof HttpResponse) {
+            hasEntity = ((HttpResponse) message).getEntity() != null;
+        }
+        return hasEntity;
+    }
+
+    public static HttpEntity getMessageEntity(HttpMessage message) {
+        if (message instanceof HttpEntityEnclosingRequest) {
+            return ((HttpEntityEnclosingRequest) message).getEntity();
+        } else if (message instanceof HttpResponse) {
+            return ((HttpResponse) message).getEntity();
+        }
+        return null;
+    }
+
+    public static void setMessageEntity(HttpMessage message, HttpEntity entity) {
+        if (message instanceof HttpEntityEnclosingRequest) {
+            ((HttpEntityEnclosingRequest) message).setEntity(entity);
+        } else if (message instanceof HttpResponse) {
+            ((HttpResponse) message).setEntity(entity);
+        }
+        long contentLength = entity.getContentLength();
+        message.setHeader(AS2Header.CONTENT_LENGTH, Long.toString(contentLength));
     }
 
 
