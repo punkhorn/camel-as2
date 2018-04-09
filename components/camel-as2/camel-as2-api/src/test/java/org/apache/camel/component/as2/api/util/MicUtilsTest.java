@@ -7,7 +7,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
 
 
-import org.apache.camel.component.as2.api.AS2CharSet;
+import org.apache.camel.component.as2.api.AS2Charset;
 import org.apache.camel.component.as2.api.AS2Header;
 import org.apache.camel.component.as2.api.AS2MimeType;
 import org.apache.camel.component.as2.api.AS2TransferEncoding;
@@ -77,7 +77,7 @@ public class MicUtilsTest {
         request.addHeader(AS2Header.DISPOSITION_NOTIFICATION_OPTIONS, DISPOSITION_NOTIFICATION_OPTIONS_VALUE);
         request.addHeader(AS2Header.CONTENT_TYPE, CONTENT_TYPE_VALUE);
         
-        ApplicationEDIFACTEntity edifactEntity = new ApplicationEDIFACTEntity( EDI_MESSAGE, AS2CharSet.US_ASCII, AS2TransferEncoding.NONE, true);
+        ApplicationEDIFACTEntity edifactEntity = new ApplicationEDIFACTEntity( EDI_MESSAGE, AS2Charset.US_ASCII, AS2TransferEncoding.NONE, true);
         InputStream is = edifactEntity.getContent();
         BasicHttpEntity basicEntity = new BasicHttpEntity();
         basicEntity.setContent(is);

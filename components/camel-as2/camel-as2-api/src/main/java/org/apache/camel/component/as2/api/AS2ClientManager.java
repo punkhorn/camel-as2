@@ -220,7 +220,7 @@ public class AS2ClientManager {
             // Create Multipart Signed Entity
             try {
                 MultipartSignedEntity multipartSignedEntity = new MultipartSignedEntity(applicationEDIEntity, gen,
-                        AS2CharSet.US_ASCII, AS2TransferEncoding.BASE64, true, null);
+                        AS2Charset.US_ASCII, AS2TransferEncoding.BASE64, true, null);
                 request.setEntity(multipartSignedEntity);
             } catch (Exception e) {
                 throw new HttpException("Failed to sign message", e);
