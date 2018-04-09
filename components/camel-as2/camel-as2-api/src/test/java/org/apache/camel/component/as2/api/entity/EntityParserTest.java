@@ -171,7 +171,7 @@ public class EntityParserTest {
         AS2SessionInputBuffer inbuffer = new AS2SessionInputBuffer(new HttpTransportMetricsImpl(), DEFAULT_BUFFER_SIZE, DEFAULT_BUFFER_SIZE, null);
         inbuffer.bind(is);
 
-        DispositionNotificationMultipartReportEntity dispositionNotificationMultipartReportEntity = EntityParser.parseDispositionNotificationMultipartReportEntityBody(inbuffer, DISPOSITION_NOTIFICATION_REPORT_CONTENT_BOUNDARY, DISPOSITION_NOTIFICATION_REPORT_CONTENT_CHARSET_NAME, DISPOSITION_NOTIFICATION_REPORT_CONTENT_TRANSFER_ENCODING);
+        DispositionNotificationMultipartReportEntity dispositionNotificationMultipartReportEntity = EntityParser.parseMultipartReportEntityBody(inbuffer, DISPOSITION_NOTIFICATION_REPORT_CONTENT_BOUNDARY, DISPOSITION_NOTIFICATION_REPORT_CONTENT_CHARSET_NAME, DISPOSITION_NOTIFICATION_REPORT_CONTENT_TRANSFER_ENCODING);
         
         assertNotNull("Unexpected Null disposition notification multipart entity", dispositionNotificationMultipartReportEntity);
         assertEquals("Unexpected number of body parts", 2, dispositionNotificationMultipartReportEntity.getPartCount());
