@@ -158,7 +158,8 @@ public class EntityParserTest {
         entity.setContent(is);
         EntityUtils.setMessageEntity(response, entity);
         
-        HttpEntity parsedEntity = EntityParser.parseMessageDispositionNotificationReportEntity(response, entity, true);
+        EntityParser.parseMessageDispositionNotificationReportEntity(response);
+        HttpEntity parsedEntity = EntityUtils.getMessageEntity(response);
         assertNotNull("Unexpected Null message disposition notification report entity", parsedEntity);
         assertTrue("Unexpected type for message disposition notification report entity", parsedEntity instanceof DispositionNotificationMultipartReportEntity);
     }

@@ -162,14 +162,14 @@ public class EntityParser {
 
     }
 
-    public static HttpEntity parseMultipartSignedEntity(HttpMessage message, HttpEntity entity, boolean isMainBody)
+    public static void parseMultipartSignedEntity(HttpMessage message)
             throws HttpException {
-        Args.notNull(entity, "Entity");
         MultipartSignedEntity multipartSignedEntity = null;
         Header[] headers = null;
+        HttpEntity entity = Args.notNull(EntityUtils.getMessageEntity(message), "message entity");
 
         if (entity instanceof MultipartSignedEntity) {
-            return entity;
+            return;
         }
 
         Args.check(entity.isStreaming(), "Entity is not streaming");
@@ -189,12 +189,6 @@ public class EntityParser {
             SessionInputBufferImpl inBuffer = new SessionInputBufferImpl(new HttpTransportMetricsImpl(), 8 * 1024);
             inBuffer.bind(entity.getContent());
 
-            // Parse Headers
-            if (!isMainBody) {
-                headers = AbstractMessageParser.parseHeaders(inBuffer, -1, -1, BasicLineParser.INSTANCE,
-                        new ArrayList<CharArrayBuffer>());
-            }
-
             // Get Boundary Value
             String boundary = multipartSignedContentType.getParameter("boundary");
             if (boundary == null) {
@@ -202,9 +196,6 @@ public class EntityParser {
             }
 
             multipartSignedEntity = new MultipartSignedEntity(boundary, true);
-            if (headers != null) {
-                multipartSignedEntity.setHeaders(headers);
-            }
 
             //
             // Parse EDI Message Body Part
@@ -300,7 +291,7 @@ public class EntityParser {
             //
             // End Signature Body Parts
 
-            return multipartSignedEntity;
+            EntityUtils.setMessageEntity(message, multipartSignedEntity);
         } catch (HttpException e) {
             throw e;
         } catch (Exception e) {
@@ -308,14 +299,13 @@ public class EntityParser {
         }
     }
 
-    public static HttpEntity parseApplicationEDIEntity(HttpMessage message, HttpEntity entity, boolean isMainBody)
+    public static void parseApplicationEDIEntity(HttpMessage message)
             throws HttpException {
-        Args.notNull(entity, "Entity");
         ApplicationEDIEntity applicationEDIEntity = null;
-        Header[] headers = null;
+        HttpEntity entity = Args.notNull(EntityUtils.getMessageEntity(message), "message entity");
 
         if (entity instanceof ApplicationEDIEntity) {
-            return entity;
+            return;
         }
 
         Args.check(entity.isStreaming(), "Entity is not streaming");
@@ -339,12 +329,6 @@ public class EntityParser {
             SessionInputBufferImpl inBuffer = new SessionInputBufferImpl(new HttpTransportMetricsImpl(), 8 * 1024);
             inBuffer.bind(entity.getContent());
 
-            // Parse Headers
-            if (!isMainBody) {
-                headers = AbstractMessageParser.parseHeaders(inBuffer, -1, -1, BasicLineParser.INSTANCE,
-                        new ArrayList<CharArrayBuffer>());
-            }
-
             // Extract content from stream
             CharArrayBuffer lineBuffer = new CharArrayBuffer(1024);
             while (inBuffer.readLine(lineBuffer) != -1) {
@@ -353,13 +337,9 @@ public class EntityParser {
 
             // Build application EDI entity
             applicationEDIEntity = EntityUtils.createEDIEntity(lineBuffer.toString(), contentType,
-                    contentTransferEncoding, isMainBody);
+                    contentTransferEncoding, true);
 
-            if (headers != null) {
-                applicationEDIEntity.setHeaders(headers);
-            }
-
-            return applicationEDIEntity;
+            EntityUtils.setMessageEntity(message, applicationEDIEntity);
         } catch (HttpException e) {
             throw e;
         } catch (Exception e) {
@@ -367,16 +347,13 @@ public class EntityParser {
         }
     }
 
-    public static HttpEntity parseMessageDispositionNotificationReportEntity(HttpMessage message,
-                                                                             HttpEntity entity,
-                                                                             boolean isMainBody)
+    public static void parseMessageDispositionNotificationReportEntity(HttpMessage message)
             throws HttpException {
-        Args.notNull(entity, "entity");
         DispositionNotificationMultipartReportEntity dispositionNotificationMultipartReportEntity = null;
-        Header[] headers = null;
+        HttpEntity entity = Args.notNull(EntityUtils.getMessageEntity(message), "message entity");
 
         if (entity instanceof DispositionNotificationMultipartReportEntity) {
-            return entity;
+            return;
         }
 
         Args.check(entity.isStreaming(), "Entity is not streaming");
@@ -406,30 +383,15 @@ public class EntityParser {
             AS2SessionInputBuffer inbuffer = new AS2SessionInputBuffer(new HttpTransportMetricsImpl(), 8 * 1024);
             inbuffer.bind(entity.getContent());
 
-            // Parse Headers
-            if (!isMainBody) {
-                headers = AbstractMessageParser.parseHeaders(inbuffer, -1, -1, BasicLineParser.INSTANCE,
-                        new ArrayList<CharArrayBuffer>());
-            }
-
             // Get Boundary Value
-            String boundary = null;
-            if (isMainBody) {
-                boundary = HttpMessageUtils.getBoundaryParameterValue(message, AS2Header.REPORT_TYPE);
-            } else if (headers != null) {
-                boundary = AS2HeaderUtils.getBoundaryParameterValue(headers, AS2Header.REPORT_TYPE);
-            }
+            String boundary = HttpMessageUtils.getBoundaryParameterValue(message, AS2Header.REPORT_TYPE);
             if (boundary == null) {
                 throw new HttpException("Failed to retrive boundary value");
             }
             
             dispositionNotificationMultipartReportEntity = parseDispositionNotificationMultipartReportEntityBody(inbuffer, boundary, charsetName, contentTransferEncoding);
 
-            if (headers != null) {
-                dispositionNotificationMultipartReportEntity.setHeaders(headers);
-            }
-
-            return dispositionNotificationMultipartReportEntity;
+            EntityUtils.setMessageEntity(message, dispositionNotificationMultipartReportEntity);
 
         } catch (HttpException e) {
             throw e;
@@ -439,9 +401,7 @@ public class EntityParser {
     }
 
     public static void parseAS2MessageEntity(HttpMessage message) throws HttpException {
-        HttpEntity entity = null;
         if (EntityUtils.hasEntity(message)) {
-            entity = EntityUtils.getMessageEntity(message);
             String contentTypeStr =  HttpMessageUtils.getHeaderValue(message, AS2Header.CONTENT_TYPE);
             if (contentTypeStr != null) {
                 ContentType contentType;
@@ -455,18 +415,15 @@ public class EntityParser {
                 case AS2MimeType.APPLICATION_EDIFACT:
                 case AS2MimeType.APPLICATION_EDI_X12:
                 case AS2MimeType.APPLICATION_EDI_CONSENT:
-                    entity = parseApplicationEDIEntity(message, entity, true);
-                    EntityUtils.setMessageEntity(message, entity);
+                    parseApplicationEDIEntity(message);
                     break;
                 case AS2MimeType.MULTIPART_SIGNED:
-                    entity = parseMultipartSignedEntity(message, entity, true);
-                    EntityUtils.setMessageEntity(message, entity);
+                    parseMultipartSignedEntity(message);
                     break;
                 case AS2MimeType.APPLICATION_PKCS7_MIME:
                     break;
                 case AS2MimeType.MULTIPART_REPORT:
-                    entity = parseMessageDispositionNotificationReportEntity(message, entity, true);
-                    EntityUtils.setMessageEntity(message, entity);
+                    parseMessageDispositionNotificationReportEntity(message);
                     break;
                 default:
                     break;
