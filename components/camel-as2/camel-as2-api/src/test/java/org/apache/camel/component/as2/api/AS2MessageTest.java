@@ -30,34 +30,21 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.camel.component.as2.api.entity.ApplicationEDIEntity;
 import org.apache.camel.component.as2.api.entity.ApplicationEDIFACTEntity;
 import org.apache.camel.component.as2.api.entity.ApplicationPkcs7SignatureEntity;
 import org.apache.camel.component.as2.api.entity.MultipartSignedEntity;
-import org.apache.camel.component.as2.api.protocol.ResponseMDN;
-import org.apache.http.ExceptionLogger;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpVersion;
-import org.apache.http.config.SocketConfig;
 import org.apache.http.entity.ContentType;
-import org.apache.http.impl.bootstrap.HttpServer;
-import org.apache.http.impl.bootstrap.ServerBootstrap;
 import org.apache.http.message.BasicHttpEntityEnclosingRequest;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpCoreContext;
-import org.apache.http.protocol.HttpProcessor;
-import org.apache.http.protocol.HttpProcessorBuilder;
 import org.apache.http.protocol.HttpRequestHandler;
-import org.apache.http.protocol.ResponseConnControl;
-import org.apache.http.protocol.ResponseContent;
-import org.apache.http.protocol.ResponseDate;
-import org.apache.http.protocol.ResponseServer;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.cms.AttributeTable;
 import org.bouncycastle.asn1.cms.IssuerAndSerialNumber;
@@ -78,6 +65,7 @@ import org.slf4j.LoggerFactory;
 
 public class AS2MessageTest {
     
+    @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(AS2MessageTest.class);
 
     private static final String METHOD = "POST";
@@ -122,9 +110,10 @@ public class AS2MessageTest {
             +"UNT+23+00000000000117'\n"
             +"UNZ+1+00000000000778'";
 
+    private static AS2ServerConnection testServer;
+
     private AS2SignedDataGenerator gen;
     
-    private static HttpServer testServer;
     private String algorithmName;
     
     private KeyPair issueKP;
@@ -163,29 +152,9 @@ public class AS2MessageTest {
     }
     
     @BeforeClass
-    public static void setUpOne() throws Exception {
-        // Setup Test Server
-        HttpProcessor httpProcessor = HttpProcessorBuilder.create()
-                .add(new ResponseContent(true))
-                .add(new ResponseServer("MyServer-HTTP/1.1"))
-                .add(new ResponseDate())
-                .add(new ResponseConnControl())
-                .add(new ResponseMDN(AS2_VERSION, SERVER_FQDN))
-                .build();
-        SocketConfig socketConfig = SocketConfig.custom()
-                .setSoTimeout(150000)
-                .setTcpNoDelay(true)
-                .build();
-        testServer = ServerBootstrap.bootstrap()
-                .setListenerPort(8080)
-                .setHttpProcessor(httpProcessor)
-                .setSocketConfig(socketConfig)
-                .setExceptionLogger(new ExceptionLogger() {
-                    @Override
-                    public void log(Exception ex) {
-                    }
-                })
-                .registerHandler("*", new HttpRequestHandler() {
+    public static void setUpOnce() throws Exception {
+        testServer = new AS2ServerConnection(AS2_VERSION , "MyServer-HTTP/1.1", SERVER_FQDN, 8080);
+        testServer.listen("*", new HttpRequestHandler() {
                     @Override
                     public void handle(HttpRequest request, HttpResponse response, HttpContext context)
                             throws HttpException, IOException {
@@ -193,24 +162,24 @@ public class AS2MessageTest {
                             org.apache.camel.component.as2.api.entity.EntityParser.parseAS2MessageEntity(request);
                             context.setAttribute(SUBJECT, SUBJECT);
                             context.setAttribute(FROM, AS2_NAME);
-                 } catch (Exception e) {
+                        } catch (Exception e) {
                             throw new HttpException("Failed to parse AS2 Message Entity", e);
                         }
-                        if (request instanceof HttpEntityEnclosingRequest && ((HttpEntityEnclosingRequest)request).getEntity() instanceof MultipartSignedEntity) {
-                            MultipartSignedEntity entity = (MultipartSignedEntity) ((HttpEntityEnclosingRequest)request).getEntity();
-                            LOG.debug("Signed entity is valid?: " + entity.isValid());
-                            LOG.debug("*** Recieved Request ***\n" + Util.printRequest(request));
-                        }
+//                        if (request instanceof HttpEntityEnclosingRequest && ((HttpEntityEnclosingRequest) request)
+//                                .getEntity() instanceof MultipartSignedEntity) {
+//                            MultipartSignedEntity entity = (MultipartSignedEntity) ((HttpEntityEnclosingRequest) request)
+//                                    .getEntity();
+//                            LOG.debug("Signed entity is valid?: " + entity.isValid());
+//                            LOG.debug("*** Recieved Request ***\n" + Util.printRequest(request));
+//                        }
                     }
-                })
-                .create();
-        testServer.start();
-      
+                });
     }
+    
 
     @AfterClass
     public static void tearDownOnce() throws Exception {
-        testServer.shutdown(1, TimeUnit.SECONDS);
+        testServer.close();
     }
     
     @Before
@@ -350,6 +319,7 @@ public class AS2MessageTest {
         
         HttpCoreContext httpContext = clientManager.send(EDI_MESSAGE, REQUEST_URI, SUBJECT, FROM, AS2_NAME, AS2_NAME, AS2MessageStructure.PLAIN, ContentType.create(AS2MediaType.APPLICATION_EDIFACT, AS2Charset.US_ASCII), null, null, null, null, DISPOSITION_NOTIFICATION_TO, null);
         
+        @SuppressWarnings("unused")
         HttpResponse response = httpContext.getResponse();
     }
         
