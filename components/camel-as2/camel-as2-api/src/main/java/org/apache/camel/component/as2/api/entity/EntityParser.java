@@ -26,6 +26,7 @@ import org.apache.camel.component.as2.api.AS2Charset;
 import org.apache.camel.component.as2.api.AS2Header;
 import org.apache.camel.component.as2.api.AS2MimeType;
 import org.apache.camel.component.as2.api.io.AS2SessionInputBuffer;
+import org.apache.camel.component.as2.api.util.AS2HeaderUtils;
 import org.apache.camel.component.as2.api.util.ContentTypeUtils;
 import org.apache.camel.component.as2.api.util.DispositionNotificationContentUtils;
 import org.apache.camel.component.as2.api.util.EntityUtils;
@@ -136,17 +137,17 @@ public class EntityParser {
 
     }
 
-    public static void skipPreambleAndStartBoundary(SessionInputBufferImpl inBuffer, String boundary)
+    public static void skipToBoundary(AS2SessionInputBuffer inbuffer, String boundary)
             throws HttpException {
 
-        boolean foundStartBoundary;
+        boolean foundEndBoundary;
         try {
-            foundStartBoundary = false;
+            foundEndBoundary = false;
             CharArrayBuffer lineBuffer = new CharArrayBuffer(1024);
-            while (inBuffer.readLine(lineBuffer) != -1) {
+            while (inbuffer.readLine(lineBuffer) != -1) {
                 final ParserCursor cursor = new ParserCursor(0, lineBuffer.length());
                 if (isBoundaryDelimiter(lineBuffer, cursor, boundary)) {
-                    foundStartBoundary = true;
+                    foundEndBoundary = true;
                     break;
                 }
                 lineBuffer.clear();
@@ -155,7 +156,7 @@ public class EntityParser {
             throw new HttpException("Failed to read start boundary for body part", e);
         }
 
-        if (!foundStartBoundary) {
+        if (!foundEndBoundary) {
             throw new HttpException("Failed to find start boundary for body part");
         }
 
@@ -366,10 +367,7 @@ public class EntityParser {
             inbuffer.setCharsetDecoder(charsetDecoder);
             inbuffer.setTransferEncoding(contentTransferEncoding);
             
-            MultipartSignedEntity multipartSignedEntity = new MultipartSignedEntity(boundary, false);
-//            ContentType contentType = ContentType.create(AS2MimeType.MULTIPART_SIGNED, charset);
-//            multipartSignedEntity.setContentType(contentType);
-            
+            MultipartSignedEntity multipartSignedEntity = new MultipartSignedEntity(boundary, false);            
 
             // Skip Preamble and Start Boundary line
             skipPreambleAndStartBoundary(inbuffer, boundary);
@@ -399,7 +397,7 @@ public class EntityParser {
                 throw new HttpException("Failed to find Content-Type header in signed entity body part");
             }
  
-            MimeEntity signedEntity = parseEntityBody(inbuffer, boundary, signedEntityContentType, signedEntityContentTransferEncoding);
+            MimeEntity signedEntity = parseEntityBody(inbuffer, boundary, signedEntityContentType, signedEntityContentTransferEncoding, headers);
             signedEntity.removeAllHeaders();
             signedEntity.setHeaders(headers);
             multipartSignedEntity.addPart(signedEntity);
@@ -472,9 +470,7 @@ public class EntityParser {
             inbuffer.setTransferEncoding(contentTransferEncoding);
 
             DispositionNotificationMultipartReportEntity dispositionNotificationMultipartReportEntity = new DispositionNotificationMultipartReportEntity(boundary, false);
-//            ContentType contentType = ContentType.create(AS2MimeType.MULTIPART_REPORT, charset);
-//            dispositionNotificationMultipartReportEntity.setContentType(contentType);
-
+            
             // Skip Preamble and Start Boundary line
             skipPreambleAndStartBoundary(inbuffer, boundary);
 
@@ -636,7 +632,8 @@ public class EntityParser {
     public static MimeEntity parseEntityBody(AS2SessionInputBuffer inbuffer,
                                              String boundary,
                                              ContentType entityContentType,
-                                             String contentTransferEncoding)
+                                             String contentTransferEncoding,
+                                             Header[] headers)
     throws ParseException {
         CharsetDecoder previousDecoder = inbuffer.getCharsetDecoder();
         String previousContentTransferEncoding = inbuffer.getTransferEncoding();
@@ -659,13 +656,17 @@ public class EntityParser {
                 entity = parseEDIEntityBody(inbuffer, boundary, entityContentType, contentTransferEncoding);
                 break;
             case AS2MimeType.MULTIPART_SIGNED:
-                entity = parseMultipartSignedEntityBody(inbuffer, boundary, charset.name(), contentTransferEncoding);
+                String multipartSignedBoundary = AS2HeaderUtils.getBoundaryParameterValue(headers, AS2Header.CONTENT_TYPE);
+                entity = parseMultipartSignedEntityBody(inbuffer, multipartSignedBoundary, charset.name(), contentTransferEncoding);
+                skipToBoundary(inbuffer, boundary);
                 break;
             case AS2MimeType.MESSAGE_DISPOSITION_NOTIFICATION:
                 entity = parseMessageDispositionNotificationEntityBody(inbuffer, boundary, charset.name(), contentTransferEncoding);
                 break;
             case AS2MimeType.MULTIPART_REPORT:
-                entity = parseMultipartReportEntityBody(inbuffer, boundary, charset.name(), contentTransferEncoding);
+                String multipartReportBoundary = AS2HeaderUtils.getBoundaryParameterValue(headers, AS2Header.REPORT_TYPE);
+                entity = parseMultipartReportEntityBody(inbuffer, multipartReportBoundary, charset.name(), contentTransferEncoding);
+                skipToBoundary(inbuffer, boundary);
                 break;
             case AS2MimeType.TEXT_PLAIN:
                 entity = parseTextPlainEntityBody(inbuffer, boundary, charset.name(), previousContentTransferEncoding);

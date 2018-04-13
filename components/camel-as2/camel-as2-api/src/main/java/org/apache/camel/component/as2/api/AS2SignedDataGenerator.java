@@ -16,6 +16,7 @@
  */
 package org.apache.camel.component.as2.api;
 
+import java.security.Key;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -65,6 +66,41 @@ public class AS2SignedDataGenerator extends CMSSignedDataGenerator {
 
         STANDARD_MICALGS = Collections.unmodifiableMap(stdMicAlgs);;
     }
+    
+    /**
+     * Signing algorithms for DSA keys in order of preference
+     */
+    public static final String[] DSA_SIGNING_ALGORITHMS = {
+            "SHA512WITHDSA",
+            "SHA384WITHDSA",
+            "SHA256WITHDSA",
+            "SHA224WITHDSA",
+            "SHA1WITHDSA",
+    };
+
+    /**
+     * Signing algorithms for RSA keys in order of preference
+     */
+    public static final String[] RSA_SIGNING_ALGORITHMS = {
+            "SHA512WITHRSA",
+            "SHA384WITHRSA",
+            "SHA256WITHRSA",
+            "SHA224WITHRSA",
+            "SHA1WITHRSA",
+            "MD5WITHRSA",
+            "MD2WITHRSA",
+    };
+    
+    /**
+     * Signing algorithms for EC keys in order of preference
+     */
+    public static final String[] EC_SIGNING_ALGORITHMS = {
+            "SHA512WITHECDSA",
+            "SHA384WITHECDSA", 
+            "SHA256WITHECDSA",
+            "SHA224WITHECDSA",
+            "SHA1WITHECDSA",
+    };
 
     public AS2SignedDataGenerator() {
     }
@@ -136,6 +172,20 @@ public class AS2SignedDataGenerator extends CMSSignedDataGenerator {
         }
         
         return ContentType.parse(header.toString());
+    }
+    
+    public static String[] getSupportedSignatureAlgorithmNamesForKey(Key key) {
+        
+        switch (key.getAlgorithm()) {
+        case "DSA":
+            return DSA_SIGNING_ALGORITHMS;
+        case "RSA":
+            return RSA_SIGNING_ALGORITHMS;
+        case "EC":
+            return EC_SIGNING_ALGORITHMS;
+        default:
+            return new String[0];
+        }
     }
 
 }

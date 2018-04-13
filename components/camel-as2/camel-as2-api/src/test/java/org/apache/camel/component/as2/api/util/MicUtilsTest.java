@@ -58,7 +58,7 @@ public class MicUtilsTest {
             +"UNT+23+00000000000117'\n"
             +"UNZ+1+00000000000778'";
     
-    private static final String EXPECTED_MESSAGE_DIGEST_ALGORITHM = "SHA-1";
+    private static final String EXPECTED_MESSAGE_DIGEST_ALGORITHM = "sha1";
     private static final String EXPECTED_ENCODED_MESSAGE_DIGEST = "PaQyByOuBL7XiYyts4Sdmvl1WME=";
 
     @Before
